@@ -1,96 +1,78 @@
+mod db_manage;
+mod utils;
+
 #[macro_use]
 extern crate rocket;
 
-use rocket_db_pools::sqlx::{self, Row};
+use db_manage::Db;
+
+use bcrypt::{hash, DEFAULT_COST};
 use rocket_db_pools::{Connection, Database};
+use rpassword::prompt_password;
+use snafu::prelude::*;
 
-#[derive(Database)]
-#[database("db")]
-struct Db(sqlx::SqlitePool);
+#[derive(Debug, Snafu)]
+enum Error {
+    #[snafu(display("Database error"))]
+    DbError {
+        source: rocket_db_pools::sqlx::Error,
+    },
+    #[snafu(display("Rocked error"))]
+    RocketError { source: rocket::Error },
+}
 
-#[get("/<id>")]
-async fn read(mut db: Connection<Db>, id: i64) -> Option<String> {
-    sqlx::query("SELECT content FROM logs WHERE id = ?")
-        .bind(id)
-        .fetch_one(&mut **db)
-        .await
-        .and_then(|r| Ok(r.try_get(0)?))
-        .ok()
+// Send to API file?
+#[get("/api/category/<id>")]
+async fn api_category(db: Connection<Db>, id: i64) -> Option<String> {
+    db_manage::category(db, id).await
+}
+
+// Send to html frontend file?
+#[get("/login")]
+async fn login() -> Option<String> {
+    Some("Hello world!".to_string())
 }
 
 #[rocket::main]
-async fn main() -> Result<(), rocket::Error> {
+async fn main() -> Result<(), Error> {
+    // setup rocket and db
     let rocket = rocket::build()
         .attach(Db::init())
-        .mount("/", routes![read])
+        .mount("/", routes![api_category])
+        .mount("/", routes![login])
         .ignite()
-        .await?;
-
+        .await
+        .context(RocketSnafu)?;
     let db = Db::fetch(&rocket).expect("Database not initialized");
-    run_db_setup(&db).await.expect("Failed to run DB setup");
+    db_manage::migrate(&db)
+        .await
+        .expect("Failed to run DB setup");
 
-    rocket.launch().await?;
+    let is_initialized = db_manage::get_password(&db).await.clone().is_some();
 
-    Ok(())
-}
+    // initialize password if not yet done
+    if !is_initialized {
+        let password = prompt_password("Enter new password: ")
+            .expect("Failed to read password from terminal");
 
-async fn run_db_setup(conn: &Db) -> Result<(), sqlx::Error> {
-    // Create meta table if it doesn't exist
-    sqlx::query(
-        r#"
-        CREATE TABLE IF NOT EXISTS meta (
-            key TEXT PRIMARY KEY,
-            value TEXT NOT NULL
-        );
-        "#,
-    )
-    .execute(&**conn)
-    .await?;
-
-    // Read current schema version
-    let version: Option<String> = sqlx::query_scalar(
-        "SELECT value FROM meta WHERE key = 'schema_version';",
-    )
-    .fetch_optional(&**conn)
-    .await?;
-
-    let version = version.unwrap_or_else(|| "0".to_string());
-    println!("Current schema version: {}", version);
-
-    match version.as_str() {
-        "0" => {
-            println!("Running initial migration...");
-
-            sqlx::query(
-                r#"
-                CREATE TABLE tasks (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    title TEXT NOT NULL,
-                    status TEXT NOT NULL,
-                    due_date TEXT,
-                    recurrence_rule TEXT
-                );
-                "#,
-            )
-            .execute(&**conn)
-            .await?;
-
-            // Update version
-            sqlx::query(
-                "INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '1');",
-            )
-            .execute(&**conn)
-            .await?;
+        if !utils::is_password_valid(&password) {
+            panic!("Password should be alpha-numeric only.");
         }
 
-        "1" => {
-            // Schema is up to date — do nothing
+        let confirm = prompt_password("Confirm password: ")
+            .expect("Failed to read password confirmation");
+
+        if password != confirm {
+            panic!("Passwords do not match.");
         }
 
-        _ => {
-            panic!("Unknown schema version: {}", version);
-        }
+        let hash =
+            hash(password, DEFAULT_COST).expect("Failed to hash password");
+
+        db_manage::set_password(&db, hash).await.context(DbSnafu)?;
     }
+
+    rocket.launch().await.context(RocketSnafu)?;
 
     Ok(())
 }
