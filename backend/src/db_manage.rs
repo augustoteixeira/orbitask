@@ -1,5 +1,7 @@
 use std::fs;
 
+use crate::sqlx::pool::PoolConnection;
+use crate::sqlx::Sqlite;
 use rocket_db_pools::sqlx::{self, Row};
 use rocket_db_pools::{Connection, Database};
 
@@ -7,9 +9,9 @@ use rocket_db_pools::{Connection, Database};
 #[database("db")]
 pub struct Db(sqlx::SqlitePool);
 
-pub async fn get_password(conn: &Db) -> Option<String> {
+pub async fn get_password(conn: &mut PoolConnection<Sqlite>) -> Option<String> {
     sqlx::query("SELECT value FROM meta WHERE key = 'password_hash';")
-        .fetch_one(&**conn)
+        .fetch_one(&mut **conn)
         .await
         .and_then(|r| Ok(r.try_get(0)?))
         .ok()

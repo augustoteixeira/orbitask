@@ -1,0 +1,2 @@
+run:
+  find src -type f | entr -r cargo run

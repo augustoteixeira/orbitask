@@ -1,45 +1,45 @@
+mod api;
 mod db_manage;
+mod frontend;
 mod utils;
 
 #[macro_use]
 extern crate rocket;
 
 use db_manage::Db;
+use utils::RateLimiter;
 
 use bcrypt::{hash, DEFAULT_COST};
-use rocket_db_pools::{Connection, Database};
+use rocket::figment::Figment;
+use rocket::Config;
+use rocket_db_pools::{sqlx, Database};
 use rpassword::prompt_password;
 use snafu::prelude::*;
 
 #[derive(Debug, Snafu)]
 enum Error {
     #[snafu(display("Database error"))]
-    DbError {
-        source: rocket_db_pools::sqlx::Error,
-    },
+    DbError { source: sqlx::Error },
     #[snafu(display("Rocked error"))]
     RocketError { source: rocket::Error },
 }
 
-// Send to API file?
-#[get("/api/category/<id>")]
-async fn api_category(db: Connection<Db>, id: i64) -> Option<String> {
-    db_manage::category(db, id).await
-}
-
-// Send to html frontend file?
-#[get("/login")]
-async fn login() -> Option<String> {
-    Some("Hello world!".to_string())
+fn rocket_config() -> Figment {
+    // initialize secret key if not yet done
+    let secret_key = utils::load_or_generate_secret();
+    Config::figment().merge(("secret_key", secret_key))
 }
 
 #[rocket::main]
 async fn main() -> Result<(), Error> {
     // setup rocket and db
-    let rocket = rocket::build()
+    let rocket = rocket::custom(rocket_config())
+        .manage(RateLimiter::new())
         .attach(Db::init())
-        .mount("/", routes![api_category])
-        .mount("/", routes![login])
+        .mount("/", routes![api::category])
+        .mount("/", routes![api::dashboard])
+        .mount("/", routes![frontend::login])
+        .mount("/", routes![api::login_submit])
         .ignite()
         .await
         .context(RocketSnafu)?;
@@ -48,7 +48,9 @@ async fn main() -> Result<(), Error> {
         .await
         .expect("Failed to run DB setup");
 
-    let is_initialized = db_manage::get_password(&db).await.clone().is_some();
+    let mut conn = db.acquire().await.context(DbSnafu)?;
+    let is_initialized =
+        db_manage::get_password(&mut conn).await.clone().is_some();
 
     // initialize password if not yet done
     if !is_initialized {
