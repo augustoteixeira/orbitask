@@ -41,6 +41,7 @@ async fn main() -> Result<(), Error> {
         .mount("/", routes![api::login_submit])
         .mount("/", routes![frontend::login])
         .mount("/", routes![frontend::boards])
+        .mount("/", routes![frontend::board])
         .ignite()
         .await
         .context(RocketSnafu)?;
