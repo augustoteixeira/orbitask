@@ -1,0 +1,1 @@
+- [ ] Setup login cookie expiration and implement remember-me to increate the time to 10 days (see gepeto).

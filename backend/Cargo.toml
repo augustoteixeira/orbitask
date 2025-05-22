@@ -12,3 +12,4 @@ rocket = { version = "0.5.1", features = ["secrets"] }
 rocket_db_pools = { version = "0.2.0", features = ["sqlx_sqlite"] }
 rpassword = "7.4.0"
 snafu = "0.8.5"
+sqlx = { version = "0.7.0", features = ["macros", "runtime-tokio-rustls"] }

@@ -15,9 +15,7 @@ use rocket::State;
 use rocket_db_pools::Connection;
 
 #[derive(Debug)]
-pub struct User {
-    pub id: String,
-}
+pub struct User {}
 
 #[rocket::async_trait]
 impl<'r> FromRequest<'r> for User {
@@ -26,16 +24,18 @@ impl<'r> FromRequest<'r> for User {
     async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
         let jar = req.cookies();
         if let Some(cookie) = jar.get_private("user_id") {
-            Outcome::Success(User {
-                id: cookie.value().to_string(),
-            })
+            if cookie.value().to_string() == "admin" {
+                Outcome::Success(User {})
+            } else {
+                Outcome::Forward(Status::Ok)
+            }
         } else {
             Outcome::Forward(Status::Ok)
         }
     }
 }
 
-fn require_auth(user: Option<User>) -> Result<User, Redirect> {
+pub fn require_auth(user: Option<User>) -> Result<User, Redirect> {
     user.ok_or_else(|| Redirect::to(uri!("/login")))
 }
 
@@ -46,8 +46,16 @@ pub fn dashboard(user: Option<User>) -> Result<String, Redirect> {
 }
 
 #[get("/dashboard", rank = 2)]
-fn dashboard_redirect() -> Redirect {
+pub fn dashboard_redirect() -> Redirect {
     Redirect::to(uri!("/login"))
+}
+
+fn ok_or_redirect(next: Option<String>) -> Redirect {
+    let target = match next {
+        Some(ref n) if n.starts_with('/') => n.clone(),
+        _ => "/".to_string(),
+    };
+    Redirect::to(target)
 }
 
 #[derive(FromForm)]
@@ -55,13 +63,14 @@ pub struct LoginForm {
     password: String,
 }
 
-#[post("/login", data = "<form>")]
+#[post("/login?<next>", data = "<form>")]
 pub async fn login_submit(
     form: Form<LoginForm>,
     mut db: Connection<Db>,
     jar: &CookieJar<'_>,
     ip: IpAddr,
     limiter: &State<RateLimiter>,
+    next: Option<String>,
 ) -> Result<Redirect, Flash<Redirect>> {
     let ip_str = ip.to_string();
     if limiter.too_many_attempts(&ip_str, 5, Duration::from_secs(600)) {
@@ -84,13 +93,8 @@ pub async fn login_submit(
 
     if verify(&password, &stored_hash).expect("Could not verify password") {
         jar.add_private(Cookie::new("user_id", "admin"));
-        Ok(Redirect::to("/dashboard"))
+        Ok(ok_or_redirect(next))
     } else {
         Err(Flash::error(Redirect::to("/"), "Invalid credentials."))
     }
-}
-
-#[get("/api/category/<id>")]
-pub async fn category(db: Connection<Db>, id: i64) -> Option<String> {
-    db_manage::category(db, id).await
 }

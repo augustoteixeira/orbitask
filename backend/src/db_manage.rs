@@ -1,7 +1,7 @@
 use std::fs;
 
 use crate::sqlx::pool::PoolConnection;
-use crate::sqlx::Sqlite;
+use crate::sqlx::{FromRow, Sqlite};
 use rocket_db_pools::sqlx::{self, Row};
 use rocket_db_pools::{Connection, Database};
 
@@ -28,8 +28,40 @@ pub async fn set_password(conn: &Db, hash: String) -> Result<(), sqlx::Error> {
     Ok(())
 }
 
-pub async fn category(mut db: Connection<Db>, id: i64) -> Option<String> {
-    sqlx::query("SELECT content FROM category WHERE id = ?")
+#[derive(Debug, FromRow)]
+pub struct Board {
+    pub id: i64,
+    pub name: String,
+    pub is_template: bool,
+}
+
+pub async fn get_all_boards(
+    mut db: Connection<Db>,
+) -> Result<Vec<Board>, sqlx::Error> {
+    let rows: Vec<Board> = sqlx::query_as::<_, Board>(
+        r#"
+      SELECT id, name, is_template
+      FROM boards
+      ORDER BY name
+        "#,
+    )
+    .fetch_all(&mut **db)
+    .await?;
+
+    let boards = rows
+        .into_iter()
+        .map(|row| Board {
+            id: row.id,
+            name: row.name,
+            is_template: row.is_template,
+        })
+        .collect();
+
+    Ok(boards)
+}
+
+pub async fn get_board(mut db: Connection<Db>, id: i64) -> Option<String> {
+    sqlx::query("SELECT content FROM boards WHERE id = ?")
         .bind(id)
         .fetch_one(&mut **db)
         .await

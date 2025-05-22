@@ -36,10 +36,11 @@ async fn main() -> Result<(), Error> {
     let rocket = rocket::custom(rocket_config())
         .manage(RateLimiter::new())
         .attach(Db::init())
-        .mount("/", routes![api::category])
         .mount("/", routes![api::dashboard])
-        .mount("/", routes![frontend::login])
+        .mount("/", routes![api::dashboard_redirect])
         .mount("/", routes![api::login_submit])
+        .mount("/", routes![frontend::login])
+        .mount("/", routes![frontend::boards])
         .ignite()
         .await
         .context(RocketSnafu)?;
