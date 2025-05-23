@@ -1,32 +1,15 @@
 use std::fs;
 
-use crate::sqlx::pool::PoolConnection;
-use crate::sqlx::{FromRow, Sqlite};
-use rocket_db_pools::sqlx::{self, Row};
+use crate::sqlx::FromRow;
+use rocket_db_pools::sqlx::{self};
 use rocket_db_pools::{Connection, Database};
+
+pub mod login;
+pub use login::{get_password, set_password};
 
 #[derive(Database)]
 #[database("db")]
 pub struct Db(sqlx::SqlitePool);
-
-pub async fn get_password(conn: &mut PoolConnection<Sqlite>) -> Option<String> {
-    sqlx::query("SELECT value FROM meta WHERE key = 'password_hash';")
-        .fetch_one(&mut **conn)
-        .await
-        .and_then(|r| Ok(r.try_get(0)?))
-        .ok()
-}
-
-pub async fn set_password(conn: &Db, hash: String) -> Result<(), sqlx::Error> {
-    sqlx::query(
-        "INSERT OR REPLACE INTO meta (key, value) VALUES ('password_hash', ?)",
-    )
-    .bind(hash)
-    .execute(&**conn)
-    .await?;
-
-    Ok(())
-}
 
 #[derive(Debug, FromRow)]
 pub struct Board {
