@@ -5,7 +5,7 @@ use rocket::response::Redirect;
 use super::frontend_style::{footer, header, meta, sidebar_style};
 use super::frontend_tags::render_tags;
 use crate::api::require_auth;
-use crate::db_manage::{get_all_boards, get_board, get_tags, Board};
+use crate::db_manage::{get_all_boards, get_board, get_tags_from_board, Board};
 use crate::frontend::User;
 use rocket_db_pools::Connection;
 
@@ -82,7 +82,7 @@ pub async fn board(
 ) -> Result<Markup, Redirect> {
     require_auth(user)?;
     let board = get_board(&mut db, id).await.unwrap().unwrap();
-    let tags = get_tags(db).await.unwrap();
+    let tags = get_tags_from_board(db, board.id).await.unwrap();
     let markup = html! {
       html {
         head {

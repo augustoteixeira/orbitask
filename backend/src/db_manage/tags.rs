@@ -31,3 +31,23 @@ pub async fn get_tags(mut db: Connection<Db>) -> Result<Vec<Tag>, sqlx::Error> {
 
     Ok(tags)
 }
+
+pub async fn get_tags_from_board(
+    mut db: Connection<Db>,
+    board_id: i64,
+) -> Result<Vec<Tag>, sqlx::Error> {
+    let tags = sqlx::query_as::<_, Tag>(
+        r#"
+    SELECT t.id, t.name
+    FROM tags t
+    INNER JOIN board_tags bt ON t.id = bt.tag_id
+    WHERE bt.board_id = ?
+    ORDER BY t.name
+            "#,
+    )
+    .bind(board_id)
+    .fetch_all(&mut **db)
+    .await?;
+
+    Ok(tags)
+}
