@@ -7,6 +7,8 @@ pub mod login;
 pub use login::{get_password, set_password};
 pub mod boards;
 pub use boards::{get_all_boards, get_board, Board};
+pub mod tags;
+pub use tags::{get_tags, Tag};
 
 #[derive(Database)]
 #[database("db")]

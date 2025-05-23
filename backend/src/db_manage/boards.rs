@@ -12,21 +12,21 @@ pub struct Board {
 }
 
 pub async fn get_board(
-    mut db: Connection<Db>,
+    db: &mut Connection<Db>,
     board_id: i64,
 ) -> Result<Option<Board>, sqlx::Error> {
     let board = sqlx::query_as::<_, Board>(
         "SELECT id, name, is_template FROM boards WHERE id = ?",
     )
     .bind(board_id)
-    .fetch_optional(&mut **db)
+    .fetch_optional(&mut ***db)
     .await?;
 
     Ok(board)
 }
 
 pub async fn get_all_boards(
-    mut db: Connection<Db>,
+    db: &mut Connection<Db>,
     include_templates: bool,
 ) -> Result<Vec<Board>, sqlx::Error> {
     let rows: Vec<Board> = sqlx::query_as::<_, Board>(
@@ -45,7 +45,7 @@ pub async fn get_all_boards(
         )
         .as_str(),
     )
-    .fetch_all(&mut **db)
+    .fetch_all(&mut ***db)
     .await?;
 
     let boards = rows

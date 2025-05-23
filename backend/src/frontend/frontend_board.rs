@@ -3,8 +3,9 @@ use maud::{html, Markup};
 use rocket::response::Redirect;
 
 use super::frontend_style::{footer, header, meta, sidebar_style};
+use super::frontend_tags::render_tags;
 use crate::api::require_auth;
-use crate::db_manage::{get_all_boards, get_board, Board};
+use crate::db_manage::{get_all_boards, get_board, get_tags, Board};
 use crate::frontend::User;
 use rocket_db_pools::Connection;
 
@@ -36,10 +37,10 @@ pub fn boards_grid(boards: Vec<Board>) -> Markup {
 #[get("/boards")]
 pub async fn boards(
     user: Option<User>,
-    db: Connection<Db>,
+    mut db: Connection<Db>,
 ) -> Result<Markup, Redirect> {
     require_auth(user)?;
-    let boards = get_all_boards(db, false).await.unwrap();
+    let boards = get_all_boards(&mut db, false).await.unwrap();
     let markup = html! {
       html {
         head {
@@ -77,10 +78,11 @@ pub async fn boards(
 pub async fn board(
     id: i64,
     user: Option<User>,
-    db: Connection<Db>,
+    mut db: Connection<Db>,
 ) -> Result<Markup, Redirect> {
     require_auth(user)?;
-    let board = get_board(db, id).await.unwrap().unwrap();
+    let board = get_board(&mut db, id).await.unwrap().unwrap();
+    let tags = get_tags(db).await.unwrap();
     let markup = html! {
       html {
         head {
@@ -107,6 +109,8 @@ pub async fn board(
                 "This board is a template."
               }
             }
+
+            (render_tags(tags))
 
             hr;
 
