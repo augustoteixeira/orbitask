@@ -2,6 +2,7 @@ use crate::Db;
 use maud::{html, Markup};
 use rocket::response::Redirect;
 
+use super::frontend_note::note_list;
 use super::frontend_state::states_grid;
 use super::frontend_style::{footer, header, meta, sidebar_style};
 use super::frontend_tags::render_tags;

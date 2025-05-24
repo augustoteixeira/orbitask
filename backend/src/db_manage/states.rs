@@ -13,6 +13,21 @@ pub struct State {
     pub position: i64,
 }
 
+pub async fn get_state(
+    db: &mut Connection<Db>,
+    state_id: i64,
+) -> Result<Option<State>, sqlx::Error> {
+    let state = sqlx::query_as::<_, State>(
+        r#"SELECT id, board_id, name, is_finished, position
+               FROM states WHERE id = ?"#,
+    )
+    .bind(state_id)
+    .fetch_optional(&mut ***db)
+    .await?;
+
+    Ok(state)
+}
+
 pub async fn get_states_for_board(
     db: &mut Connection<Db>,
     board_id: i64,

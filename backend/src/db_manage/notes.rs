@@ -5,27 +5,31 @@ use rocket_db_pools::Connection;
 use super::Db;
 
 #[derive(Debug, FromRow)]
-pub struct State {
+pub struct Note {
     pub id: i64,
     pub board_id: i64,
+    pub factory_id: Option<i64>,
+    pub state_id: i64,
     pub name: String,
-    pub is_finished: bool,
-    pub position: i64,
+    pub start_date: String, // Consider using `chrono::NaiveDate` later
+    pub due_date: String,
 }
 
-pub async fn get_states_for_board(
+pub async fn get_note_for_state(
     db: &mut Connection<Db>,
     board_id: i64,
-) -> Result<Vec<State>, sqlx::Error> {
-    let states = sqlx::query_as::<_, State>(
-        "SELECT id, board_id, name, is_finished, position
-         FROM states
-         WHERE board_id = ?
-         ORDER BY position",
+) -> Result<Vec<Note>, sqlx::Error> {
+    let notes = sqlx::query_as::<_, Note>(
+        r#"
+        SELECT id, board_id, factory_id, state_id, name, start_date, due_date
+        FROM notes
+        WHERE board_id = ?
+        ORDER BY due_date
+        "#,
     )
     .bind(board_id)
-    .fetch_all(&mut ***db)
+    .fetch_all(&mut ***db) // Triple deref to get &mut SqliteConnection
     .await?;
 
-    Ok(states)
+    Ok(notes)
 }
