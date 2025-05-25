@@ -2,16 +2,41 @@ use crate::Db;
 use maud::{html, Markup};
 use rocket::response::Redirect;
 
-use super::note::note_list;
-use super::state::states_grid;
+use super::state::{get_state_view, states_grid, StateView};
 use super::style::{footer, header, meta, sidebar_style};
-use super::tags::render_tags;
+use super::tags::{render_tags, Tag};
 use crate::api::require_auth;
 use crate::db_manage::{
     get_all_boards, get_board, get_states_for_board, get_tags_from_board, Board,
 };
 use crate::frontend::User;
+use crate::sqlx::FromRow;
 use rocket_db_pools::Connection;
+
+#[derive(Debug, FromRow)]
+pub struct BoardView {
+    board: Board,
+    tags: Vec<Tag>,
+    state_views: Vec<StateView>,
+}
+
+pub async fn get_board_view(
+    mut db: &mut Connection<Db>,
+    id: i64,
+) -> Result<BoardView, sqlx::Error> {
+    let board = get_board(&mut db, id).await.unwrap().unwrap();
+    let tags = get_tags_from_board(&mut db, board.id).await.unwrap();
+    let states = get_states_for_board(&mut db, board.id).await.unwrap();
+    let mut state_views = Vec::new();
+    for s in states {
+        state_views.push(get_state_view(&mut db, s.id).await?);
+    }
+    Ok(BoardView {
+        board,
+        tags,
+        state_views,
+    })
+}
 
 pub fn boards_grid(boards: Vec<Board>) -> Markup {
     html! {
@@ -85,9 +110,7 @@ pub async fn board(
     mut db: Connection<Db>,
 ) -> Result<Markup, Redirect> {
     require_auth(user)?;
-    let board = get_board(&mut db, id).await.unwrap().unwrap();
-    let tags = get_tags_from_board(&mut db, board.id).await.unwrap();
-    let states = get_states_for_board(&mut db, board.id).await.unwrap();
+    let board_view = get_board_view(&mut db, id).await.unwrap();
     let markup = html! {
       html {
         head {
@@ -107,25 +130,19 @@ pub async fn board(
               }
             }
 
-            h1 { (board.name) }
+            h1 { (board_view.board.name) }
 
-            @if board.is_template {
+            @if board_view.board.is_template {
               p style="color: var(--muted-color); font-style: italic;" {
                 "This board is a template."
               }
             }
 
-            (render_tags(tags))
+            (render_tags(board_view.tags))
 
             hr;
 
-            (states_grid(states))
-            section style="margin-top: 2rem;" {
-              h2 { "Notes" }
-              p { "No notes yet." }
-
-              // You could later render states & notes here
-            }
+            (states_grid(board_view.state_views))
           }
         }
           (footer())

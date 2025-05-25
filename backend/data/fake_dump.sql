@@ -148,3 +148,44 @@ INSERT INTO states (board_id, name, is_finished, position) VALUES
   (10, 'Planned', 0, 0),
   (10, 'In Progress', 0, 1),
   (10, 'Achieved', 1, 2);
+
+-- 'Marketing Plan' states: 1 (Ideas), 2 (Drafting), 3 (Review), 4 (Approved)
+INSERT INTO notes (board_id, factory_id, state_id, name, start_date, due_date) VALUES
+  -- State 1 (Ideas): 0 notes
+  -- State 2 (Drafting): 2 notes
+  (1, NULL, 2, 'Write homepage copy', '2025-05-01', '2025-05-02'),
+  (1, NULL, 2, 'Design CTA layout', '2025-05-02', '2025-05-03'),
+
+  -- State 3 (Review): 1 note
+  (1, NULL, 3, 'Submit to team for review', '2025-05-04', '2025-05-05'),
+
+  -- State 4 (Approved): 3 notes
+  (1, NULL, 4, 'Approved: homepage', '2025-05-06', '2025-05-07'),
+  (1, NULL, 4, 'Approved: press kit', '2025-05-08', '2025-05-09'),
+  (1, NULL, 4, 'Approved: social plan', '2025-05-09', '2025-05-10');
+
+-- States: 5–8
+INSERT INTO notes (board_id, factory_id, state_id, name, start_date, due_date) VALUES
+  -- State 5 (Planned): 1 note
+  (2, NULL, 5, 'Plan Q3 sprint', '2025-05-01', '2025-05-01'),
+
+  -- State 6 (In Progress): 3 notes
+  (2, NULL, 6, 'Feature toggle refactor', '2025-05-02', '2025-05-04'),
+  (2, NULL, 6, 'Implement dark mode', '2025-05-03', '2025-05-06'),
+  (2, NULL, 6, 'Database migration draft', '2025-05-04', '2025-05-07'),
+
+  -- State 7 (Testing): 0 notes
+
+  -- State 8 (Released): 1 note
+  (2, NULL, 8, 'Release v2.3', '2025-05-08', '2025-05-09');
+
+-- States: 9–11
+INSERT INTO notes (board_id, factory_id, state_id, name, start_date, due_date) VALUES
+  -- State 9 (Backlog): 2 notes
+  (3, NULL, 9, 'Update dependencies', '2025-05-01', '2025-05-01'),
+  (3, NULL, 9, 'Check backups', '2025-05-01', '2025-05-02'),
+
+  -- State 10 (Doing): 1 note
+  (3, NULL, 10, 'Weekly team sync', '2025-05-02', '2025-05-02');
+
+  -- State 11 (Done): 0 notes

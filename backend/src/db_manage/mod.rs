@@ -12,7 +12,7 @@ pub use tags::{get_tags_from_board, Tag};
 pub mod states;
 pub use states::{get_state, get_states_for_board, State};
 pub mod notes;
-pub use notes::{get_note_for_state, Note};
+pub use notes::{get_notes_for_state, Note};
 
 #[derive(Database)]
 #[database("db")]

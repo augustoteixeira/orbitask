@@ -15,19 +15,19 @@ pub struct Note {
     pub due_date: String,
 }
 
-pub async fn get_note_for_state(
+pub async fn get_notes_for_state(
     db: &mut Connection<Db>,
-    board_id: i64,
+    state_id: i64,
 ) -> Result<Vec<Note>, sqlx::Error> {
     let notes = sqlx::query_as::<_, Note>(
         r#"
         SELECT id, board_id, factory_id, state_id, name, start_date, due_date
         FROM notes
-        WHERE board_id = ?
+        WHERE state_id = ?
         ORDER BY due_date
         "#,
     )
-    .bind(board_id)
+    .bind(state_id)
     .fetch_all(&mut ***db) // Triple deref to get &mut SqliteConnection
     .await?;
 

@@ -1,6 +1,6 @@
 use maud::{html, Markup};
 
-use crate::db_manage::Tag;
+pub use crate::db_manage::Tag;
 
 pub fn render_tags(tags: Vec<Tag>) -> Markup {
     html! {
