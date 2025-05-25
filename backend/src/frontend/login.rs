@@ -1,6 +1,6 @@
 use maud::{html, Markup};
 
-use super::frontend_style::{footer, meta};
+use super::style::{footer, meta};
 
 #[get("/login")]
 pub async fn login() -> Markup {

@@ -2,10 +2,10 @@ use crate::Db;
 use maud::{html, Markup};
 use rocket::response::Redirect;
 
-use super::frontend_note::note_list;
-use super::frontend_state::states_grid;
-use super::frontend_style::{footer, header, meta, sidebar_style};
-use super::frontend_tags::render_tags;
+use super::note::note_list;
+use super::state::states_grid;
+use super::style::{footer, header, meta, sidebar_style};
+use super::tags::render_tags;
 use crate::api::require_auth;
 use crate::db_manage::{
     get_all_boards, get_board, get_states_for_board, get_tags_from_board, Board,
