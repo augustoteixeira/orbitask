@@ -37,9 +37,11 @@ async fn main() -> Result<(), Error> {
         .manage(RateLimiter::new())
         .attach(Db::init())
         .mount("/", routes![api::login_submit])
+        .mount("/", routes![api::create_board_submit])
         .mount("/", routes![frontend::login::login])
         .mount("/", routes![frontend::board::boards])
         .mount("/", routes![frontend::board::board])
+        .mount("/", routes![frontend::board::new_board])
         .ignite()
         .await
         .context(RocketSnafu)?;

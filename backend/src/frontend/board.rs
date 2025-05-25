@@ -151,3 +151,63 @@ pub async fn board(
     };
     Ok(markup)
 }
+
+#[get("/boards/new")]
+pub async fn new_board(
+    user: Option<User>,
+    mut db: Connection<Db>,
+) -> Result<Markup, Redirect> {
+    require_auth(user)?;
+
+    let boards = get_all_boards(&mut db, true).await.unwrap();
+    let templates: Vec<(i64, String)> = boards
+        .into_iter()
+        .filter(|board| board.is_template)
+        .map(|board| (board.id, board.name))
+        .collect();
+
+    Ok(html! {
+        head {
+          (meta())
+          title { "Boards" }
+
+          (sidebar_style())
+        }
+
+      main class="container" {
+        h1 { "Create a New Board" }
+
+        form method="post" action="/boards/create" {
+          label for="name" { "Board name" }
+          input type="text" id="name" name="name" required;
+
+          fieldset {
+            legend { "How to create?" }
+
+            label {
+              input type="radio" name="mode" value="empty" checked;
+              " Empty board"
+            }
+
+            label {
+              input type="radio" name="mode" value="template";
+              " Use template"
+            }
+          }
+
+          // Template picker (initially shown — JS can later hide/show this)
+          label for="template_id" {
+            "Choose template:"
+            select id="template_id" name="template_id" {
+              option value="" disabled selected { "-- Select template --" }
+              @for (id, name) in &templates {
+                option value={(id)} { (name) }
+              }
+            }
+          }
+
+          button type="submit" class="contrast" { "Create Board" }
+        }
+      }
+    })
+}

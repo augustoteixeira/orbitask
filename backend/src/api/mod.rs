@@ -4,6 +4,8 @@ use rocket::Request;
 
 pub mod login;
 pub use login::{login_submit, require_auth};
+pub mod boards;
+pub use boards::create_board_submit;
 
 #[derive(Debug)]
 pub struct User {}
