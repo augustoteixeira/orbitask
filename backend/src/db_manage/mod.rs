@@ -13,6 +13,7 @@ pub mod states;
 pub use states::{get_state, get_states_for_board, State};
 pub mod notes;
 pub use notes::{get_notes_for_state, Note};
+pub mod errors;
 
 #[derive(Database)]
 #[database("db")]

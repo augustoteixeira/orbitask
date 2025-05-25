@@ -6,6 +6,8 @@ pub mod login;
 pub use login::{login_submit, require_auth};
 pub mod boards;
 pub use boards::create_board_submit;
+pub mod states;
+pub use states::move_state_api;
 
 #[derive(Debug)]
 pub struct User {}

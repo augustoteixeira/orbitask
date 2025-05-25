@@ -23,7 +23,9 @@ pub async fn get_tag(
     Ok(board)
 }
 
-pub async fn get_tags(mut db: Connection<Db>) -> Result<Vec<Tag>, sqlx::Error> {
+pub async fn get_all_tags(
+    mut db: Connection<Db>,
+) -> Result<Vec<Tag>, sqlx::Error> {
     let tags =
         sqlx::query_as::<_, Tag>("SELECT id, name FROM tags ORDER BY name")
             .fetch_all(&mut **db)

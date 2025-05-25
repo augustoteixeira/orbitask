@@ -38,6 +38,7 @@ async fn main() -> Result<(), Error> {
         .attach(Db::init())
         .mount("/", routes![api::login_submit])
         .mount("/", routes![api::create_board_submit])
+        .mount("/", routes![api::move_state_api])
         .mount("/", routes![frontend::login::login])
         .mount("/", routes![frontend::board::boards])
         .mount("/", routes![frontend::board::board])

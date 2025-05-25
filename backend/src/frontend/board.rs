@@ -15,9 +15,9 @@ use rocket_db_pools::Connection;
 
 #[derive(Debug, FromRow)]
 pub struct BoardView {
-    board: Board,
-    tags: Vec<Tag>,
-    state_views: Vec<StateView>,
+    pub board: Board,
+    pub tags: Vec<Tag>,
+    pub state_views: Vec<StateView>,
 }
 
 pub async fn get_board_view(
