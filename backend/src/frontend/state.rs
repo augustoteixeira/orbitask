@@ -80,7 +80,7 @@ pub fn state_render(state_view: StateView) -> Markup {
             { "←" }
           }
 
-          @if pos < state_view.max_position {
+          @if pos < state_view.max_position - 1 {
             button
               type="submit"
               name="new_position"
