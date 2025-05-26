@@ -3,7 +3,7 @@ use crate::Db;
 
 use crate::api::require_auth;
 use rocket::form::Form;
-use rocket::response::Redirect;
+use rocket::response::{Flash, Redirect};
 use rocket_db_pools::Connection;
 
 use super::User;
@@ -20,7 +20,7 @@ pub async fn move_state_api(
     mut db: Connection<Db>,
     state_id: i64,
     form: Form<MoveStateForm>,
-) -> Result<Redirect, Redirect> {
+) -> Result<Redirect, Flash<Redirect>> {
     require_auth(user)?;
 
     let form = form.into_inner();
@@ -30,15 +30,20 @@ pub async fn move_state_api(
     {
         Ok(Some(state)) => {
             // Redirect to the board's page to reflect updated state
-            Ok(Redirect::to(format!("/boards/{}", state.board_id)))
+            Err(Flash::success(
+                Redirect::to(format!("/boards/{}", state.board_id)),
+                "State moved",
+            ))
         }
         Ok(None) => {
-            // State not found
-            Err(Redirect::to("/boards")) // Could add flash message here
+            Err(Flash::error(Redirect::to("/boards"), "State not found"))
         }
         Err(e) => {
             eprintln!("Error moving state: {e}");
-            Err(Redirect::to("/boards"))
+            Err(Flash::error(
+                Redirect::to("/boards"),
+                "Error moving state: {e}",
+            ))
         }
     }
 }

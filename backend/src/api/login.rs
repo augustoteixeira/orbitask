@@ -14,8 +14,14 @@ use rocket_db_pools::Connection;
 
 use super::User;
 
-pub fn require_auth(user: Option<User>) -> Result<User, Redirect> {
-    user.ok_or_else(|| Redirect::to(uri!("/login")))
+// pub fn require_auth(user: Option<User>) -> Result<User, Redirect> {
+//     user.ok_or_else(|| Redirect::to(uri!("/login")))
+// }
+
+pub fn require_auth(user: Option<User>) -> Result<User, Flash<Redirect>> {
+    user.ok_or_else(|| {
+        Flash::error(Redirect::to(uri!("/login")), "Not authorized.")
+    })
 }
 
 fn ok_or_redirect(next: Option<String>) -> Redirect {
@@ -72,7 +78,7 @@ pub async fn logout_submit(
     jar: &CookieJar<'_>,
 ) -> Result<Redirect, Flash<Redirect>> {
     // Remove the authentication cookie
-    jar.remove_private(Cookie::from("auth"));
+    jar.remove_private(Cookie::from("user_id"));
 
     // Redirect to login with a flash message
     Err(Flash::success(

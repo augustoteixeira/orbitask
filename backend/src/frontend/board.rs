@@ -1,9 +1,10 @@
 use crate::Db;
 use maud::{html, Markup};
-use rocket::response::Redirect;
+use rocket::request::FlashMessage;
+use rocket::response::{Flash, Redirect};
 
 use super::state::{get_state_view, states_grid, StateView};
-use super::style::{footer, header, meta, sidebar_style};
+use super::style::{base_flash, footer, header, meta, sidebar_style};
 use super::tags::{render_tags, Tag};
 use crate::api::require_auth;
 use crate::db_manage::{
@@ -65,9 +66,10 @@ pub fn boards_grid(boards: Vec<Board>) -> Markup {
 
 #[get("/boards")]
 pub async fn boards(
+    flash: Option<FlashMessage<'_>>,
     user: Option<User>,
     mut db: Connection<Db>,
-) -> Result<Markup, Redirect> {
+) -> Result<Markup, Flash<Redirect>> {
     require_auth(user)?;
     let boards = get_all_boards(&mut db, false).await.unwrap();
     let markup = html! {
@@ -78,6 +80,7 @@ pub async fn boards(
 
           (sidebar_style())
         }
+        (base_flash(flash))
         body {
           (header())
 
@@ -107,8 +110,9 @@ pub async fn boards(
 pub async fn board(
     id: i64,
     user: Option<User>,
+    flash: Option<FlashMessage<'_>>,
     mut db: Connection<Db>,
-) -> Result<Markup, Redirect> {
+) -> Result<Markup, Flash<Redirect>> {
     require_auth(user)?;
     let board_view = get_board_view(&mut db, id).await.unwrap();
     let markup = html! {
@@ -124,6 +128,7 @@ pub async fn board(
 
         main class="container" {
           section {
+            (base_flash(flash))
             nav style="margin-bottom: 1rem;" {
               a href="/boards" role="button" {
                 "← Back to Boards"
@@ -155,8 +160,9 @@ pub async fn board(
 #[get("/boards/new")]
 pub async fn new_board(
     user: Option<User>,
+    flash: Option<FlashMessage<'_>>,
     mut db: Connection<Db>,
-) -> Result<Markup, Redirect> {
+) -> Result<Markup, Flash<Redirect>> {
     require_auth(user)?;
 
     let boards = get_all_boards(&mut db, true).await.unwrap();
@@ -175,6 +181,7 @@ pub async fn new_board(
         }
 
       main class="container" {
+        (base_flash(flash))
         h1 { "Create a New Board" }
 
         form method="post" action="/boards/create" {

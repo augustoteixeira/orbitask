@@ -22,12 +22,7 @@ pub async fn create_board_submit(
     mut db: Connection<Db>,
     form: Form<NewBoardForm>,
 ) -> Result<Redirect, Flash<Redirect>> {
-    match require_auth(user) {
-        Ok(_) => {}
-        Err(redirect) => {
-            return Err(Flash::error(redirect, "You must be logged in."))
-        }
-    }
+    require_auth(user)?;
 
     let form = form.into_inner();
     let is_template = form.is_template.unwrap_or(false);
@@ -39,7 +34,10 @@ pub async fn create_board_submit(
     };
 
     match create_board(&mut db, form.name, is_template, template_id).await {
-        Ok(new_id) => Ok(Redirect::to(format!("/boards/{}", new_id))),
+        Ok(new_id) => Err(Flash::success(
+            Redirect::to(format!("/boards/{}", new_id)),
+            "Board created!",
+        )),
         Err(err) => {
             eprintln!("Error creating board: {err}");
             Err(Flash::error(
