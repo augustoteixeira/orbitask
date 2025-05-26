@@ -11,6 +11,7 @@ Features
 Improvements
 ------------
 
+- [ ] In `/boards/new`, add a button to go back to `/boards`.
 - [ ] Setup login cookie expiration and implement remember-me to increate the time to 10 days (see gepeto).
 - [ ] Implement logout
 - [ ] Extract (in frontend) the display of a single note out of the notes list.

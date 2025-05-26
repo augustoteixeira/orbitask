@@ -37,6 +37,7 @@ async fn main() -> Result<(), Error> {
         .manage(RateLimiter::new())
         .attach(Db::init())
         .mount("/", routes![api::login_submit])
+        .mount("/", routes![api::logout_submit])
         .mount("/", routes![api::create_board_submit])
         .mount("/", routes![api::move_state_api])
         .mount("/", routes![frontend::login::login])

@@ -3,7 +3,7 @@ use rocket::request::{FromRequest, Outcome};
 use rocket::Request;
 
 pub mod login;
-pub use login::{login_submit, require_auth};
+pub use login::{login_submit, logout_submit, require_auth};
 pub mod boards;
 pub use boards::create_board_submit;
 pub mod states;

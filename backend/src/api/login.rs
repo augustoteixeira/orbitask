@@ -66,3 +66,17 @@ pub async fn login_submit(
         Err(Flash::error(Redirect::to("/"), "Invalid credentials."))
     }
 }
+
+#[post("/logout")]
+pub async fn logout_submit(
+    jar: &CookieJar<'_>,
+) -> Result<Redirect, Flash<Redirect>> {
+    // Remove the authentication cookie
+    jar.remove_private(Cookie::from("auth"));
+
+    // Redirect to login with a flash message
+    Err(Flash::success(
+        Redirect::to("/login"),
+        "You have been logged out.",
+    ))
+}
