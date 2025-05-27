@@ -1,5 +1,3 @@
-use super::api::User;
-
 pub mod board;
 pub mod login;
 pub mod note;

@@ -1,18 +1,22 @@
-use maud::{html, Markup};
+use maud::{html, Markup, DOCTYPE};
 use rocket::request::FlashMessage;
 
 pub fn base_flash(flash: Option<FlashMessage<'_>>) -> Markup {
     html! {
-      @if let Some(msg) = flash {
-        p style={
-          @let base = "margin: 1rem 0; padding: 0.75rem; border-radius: 0.5rem; font-weight: bold;";
-          @match msg.kind() {
-            "success" => "{base} background-color: #d1e7dd; color: #0f5132;",
-            "error" => "{base} background-color: #f8d7da; color: #842029;",
-            _ => "{base} background-color: var(--muted-bg); color: var(--contrast);",
+      footer."container-fluid" {
+        @if let Some(msg) = flash {
+          p style={
+            @let base = r#"margin: 1rem 0; padding: 0.75rem;
+                           border-radius: 0.5rem; font-weight: bold;"#;
+            @match msg.kind() {
+              "success" => "{base} background-color: #d1e7dd; color: #0f5132;",
+              "error" => "{base} background-color: #f8d7da; color: #842029;",
+              _ => r#"{base} background-color: var(--muted-bg);
+                      color: var(--contrast);"#,
+            }
+          } {
+            (msg.message())
           }
-        } {
-          (msg.message())
         }
       }
     }

@@ -49,6 +49,7 @@ async fn main() -> Result<(), Error> {
         .mount("/", routes![frontend::login::login])
         .mount("/", routes![frontend::board::boards])
         .mount("/", routes![frontend::board::board])
+        .mount("/", routes![frontend::board::board_settings])
         .mount("/", routes![frontend::board::new_board])
         .register("/", catchers![unauthorized])
         .ignite()

@@ -12,12 +12,6 @@ use rocket::response::{Flash, Redirect};
 use rocket::State;
 use rocket_db_pools::Connection;
 
-use super::User;
-
-// pub fn require_auth(user: Option<User>) -> Result<User, Redirect> {
-//     user.ok_or_else(|| Redirect::to(uri!("/login")))
-// }
-
 fn ok_or_redirect(next: Option<String>) -> Redirect {
     let target = match next {
         Some(ref n) if n.starts_with('/') => n.clone(),
@@ -79,10 +73,4 @@ pub async fn logout_submit(
         Redirect::to("/login"),
         "You have been logged out.",
     ))
-}
-
-pub fn require_auth(user: Option<User>) -> Result<User, Flash<Redirect>> {
-    user.ok_or_else(|| {
-        Flash::error(Redirect::to(uri!("/login")), "Not authorized.")
-    })
 }

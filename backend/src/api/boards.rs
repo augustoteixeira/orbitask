@@ -1,12 +1,10 @@
 use crate::db_manage::boards::create_board;
 use crate::Db;
 
-use crate::api::require_auth;
+use crate::api::Authenticated;
 use rocket::form::Form;
 use rocket::response::{Flash, Redirect};
 use rocket_db_pools::Connection;
-
-use super::User;
 
 #[derive(FromForm)]
 pub struct NewBoardForm {
@@ -18,12 +16,10 @@ pub struct NewBoardForm {
 
 #[post("/boards/create", data = "<form>")]
 pub async fn create_board_submit(
-    user: Option<User>,
+    _auth: Authenticated,
     mut db: Connection<Db>,
     form: Form<NewBoardForm>,
 ) -> Result<Redirect, Flash<Redirect>> {
-    require_auth(user)?;
-
     let form = form.into_inner();
     let is_template = form.is_template.unwrap_or(false);
 

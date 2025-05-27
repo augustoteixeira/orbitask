@@ -1,16 +1,15 @@
 use crate::Db;
-use maud::{html, Markup};
+use maud::{html, Markup, DOCTYPE};
 use rocket::request::FlashMessage;
 use rocket::response::{Flash, Redirect};
 
 use super::state::{get_state_view, states_grid, StateView};
 use super::style::{base_flash, footer, header, meta, sidebar_style};
 use super::tags::{render_tags, Tag};
-use crate::api::{require_auth, Authenticated};
+use crate::api::Authenticated;
 use crate::db_manage::{
     get_all_boards, get_board, get_states_for_board, get_tags_from_board, Board,
 };
-use crate::frontend::User;
 use crate::sqlx::FromRow;
 use rocket_db_pools::Connection;
 
@@ -72,6 +71,7 @@ pub async fn boards(
 ) -> Result<Markup, Flash<Redirect>> {
     let boards = get_all_boards(&mut db, false).await.unwrap();
     let markup = html! {
+      (DOCTYPE)
       html {
         head {
           (meta())
@@ -108,13 +108,13 @@ pub async fn boards(
 #[get("/boards/<id>")]
 pub async fn board(
     id: i64,
-    user: Option<User>,
+    _auth: Authenticated,
     flash: Option<FlashMessage<'_>>,
     mut db: Connection<Db>,
 ) -> Result<Markup, Flash<Redirect>> {
-    require_auth(user)?;
     let board_view = get_board_view(&mut db, id).await.unwrap();
     let markup = html! {
+      (DOCTYPE)
       html {
         head {
           (meta())
@@ -127,14 +127,20 @@ pub async fn board(
 
         main class="container" {
           section {
-            (base_flash(flash))
             nav style="margin-bottom: 1rem;" {
               a href="/boards" role="button" {
                 "← Back to Boards"
               }
             }
-
-            h1 { (board_view.board.name) }
+            // Title + Settings aligned
+            div style=r#"display: flex; justify-content: space-between;
+                         align-items: center;"# {
+              h1 style="margin: 0;" { (board_view.board.name) }
+              a href={(format!("/boards/{}/settings", board_view.board.id))}
+                               title="Board settings" {
+                "Settings"
+              }
+            }
 
             @if board_view.board.is_template {
               p style="color: var(--muted-color); font-style: italic;" {
@@ -149,6 +155,7 @@ pub async fn board(
             (states_grid(board_view.state_views))
           }
         }
+          (base_flash(flash))
           (footer())
         }
       }
@@ -156,14 +163,103 @@ pub async fn board(
     Ok(markup)
 }
 
-#[get("/boards/new")]
-pub async fn new_board(
-    user: Option<User>,
+#[get("/boards/<id>/settings")]
+pub async fn board_settings(
+    id: i64,
+    _auth: Authenticated,
     flash: Option<FlashMessage<'_>>,
     mut db: Connection<Db>,
 ) -> Result<Markup, Flash<Redirect>> {
-    require_auth(user)?;
+    let board_view = get_board_view(&mut db, id).await.unwrap();
+    Ok(html! {
+                  main class="container" {
+                    head {
+                      (meta())
+                      (header())
 
+                      section {
+                      nav style="margin-bottom: 1rem;" {
+                        a href={(format!("/boards/{}", id))} role="button" { "← Back to Board" }
+                      }
+
+                      h1 { "Board Settings" }
+
+                      (base_flash(flash))
+
+                      h2 { "Add new state" }
+
+    form method="post" action={(format!("/boards/{}/create_state", board_view.board.id))}
+         style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1rem;" {
+
+      input
+        type="text"
+        name="name"
+        placeholder="New state name"
+        required
+        style="flex-grow: 1; min-width: 150px; padding: 0.25rem; font-size: 0.9em;";
+
+      label style="font-size: 0.9em;" {
+        input type="checkbox" name="is_finished";
+        " Finished?"
+      }
+
+      button
+        type="submit"
+        class="secondary"
+      {
+        "Create"
+      }
+    }
+
+                      h2 { "States" }
+
+                      ul style="list-style: none; padding: 0;" {
+            @for state_view in &board_view.state_views {
+              @let state = &state_view.state;
+              article style="margin-bottom: 1rem; padding: 1rem; border: 1px solid var(--muted-border); border-radius: 0.5rem;" {
+                h3 style="margin-bottom: 0.5rem;" { (state.name) }
+        form method="post" action={(format!("/states/{}/rename", state.id))}
+             style="display: flex; gap: 0.5rem; align-items: center; width: 100%;" {
+
+          input
+            type="text"
+            name="new_name"
+            value={(state.name)}
+            required
+            style="flex-grow: 1; min-width: 100px; padding: 0.25rem; font-size: 0.9em;";
+
+          button
+            type="submit"
+            class="secondary"
+          {
+            "Rename"
+          }
+        }
+
+                  form method="post" action={(format!("/states/{}/delete", state.id))}
+             style="margin-top: 0.5rem;" {
+          button
+            type="submit"
+            class="contrast"
+          {
+            "Delete"
+          }
+        }
+
+              }
+            }
+                      }}
+                    }
+                  }
+                })
+}
+
+#[get("/boards/new")]
+pub async fn new_board(
+    _auth: Authenticated,
+    flash: Option<FlashMessage<'_>>,
+    mut db: Connection<Db>,
+) -> Result<Markup, Flash<Redirect>> {
     let boards = get_all_boards(&mut db, true).await.unwrap();
     let templates: Vec<(i64, String)> = boards
         .into_iter()
