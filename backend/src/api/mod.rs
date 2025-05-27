@@ -1,5 +1,6 @@
 use rocket::http::Status;
 use rocket::request::{FromRequest, Outcome};
+use rocket::response::Flash;
 use rocket::Request;
 
 pub mod login;
@@ -21,6 +22,26 @@ impl<'r> FromRequest<'r> for User {
         if let Some(cookie) = jar.get_private("user_id") {
             if cookie.value().to_string() == "admin" {
                 Outcome::Success(User {})
+            } else {
+                Outcome::Forward(Status::Ok)
+            }
+        } else {
+            Outcome::Forward(Status::Ok)
+        }
+    }
+}
+
+pub struct Authenticated;
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for Authenticated {
+    type Error = ();
+
+    async fn from_request(req: &'r Request<'_>) -> Outcome<Self, ()> {
+        let jar = req.cookies();
+        if let Some(cookie) = jar.get_private("user_id") {
+            if cookie.value().to_string() == "admin" {
+                Outcome::Success(Authenticated)
             } else {
                 Outcome::Forward(Status::Ok)
             }

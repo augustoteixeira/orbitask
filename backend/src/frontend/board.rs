@@ -6,7 +6,7 @@ use rocket::response::{Flash, Redirect};
 use super::state::{get_state_view, states_grid, StateView};
 use super::style::{base_flash, footer, header, meta, sidebar_style};
 use super::tags::{render_tags, Tag};
-use crate::api::require_auth;
+use crate::api::{require_auth, Authenticated};
 use crate::db_manage::{
     get_all_boards, get_board, get_states_for_board, get_tags_from_board, Board,
 };
@@ -67,10 +67,9 @@ pub fn boards_grid(boards: Vec<Board>) -> Markup {
 #[get("/boards")]
 pub async fn boards(
     flash: Option<FlashMessage<'_>>,
-    user: Option<User>,
+    _auth: Authenticated,
     mut db: Connection<Db>,
 ) -> Result<Markup, Flash<Redirect>> {
-    require_auth(user)?;
     let boards = get_all_boards(&mut db, false).await.unwrap();
     let markup = html! {
       html {

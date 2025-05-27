@@ -11,6 +11,7 @@ use utils::RateLimiter;
 
 use bcrypt::{hash, DEFAULT_COST};
 use rocket::figment::Figment;
+use rocket::response::{Flash, Redirect};
 use rocket::Config;
 use rocket_db_pools::{sqlx, Database};
 use rpassword::prompt_password;
@@ -30,6 +31,11 @@ fn rocket_config() -> Figment {
     Config::figment().merge(("secret_key", secret_key))
 }
 
+#[catch(401)]
+fn unauthorized() -> Flash<Redirect> {
+    Flash::error(Redirect::to(uri!("/login")), "You must login first!")
+}
+
 #[rocket::main]
 async fn main() -> Result<(), Error> {
     // setup rocket and db
@@ -44,6 +50,7 @@ async fn main() -> Result<(), Error> {
         .mount("/", routes![frontend::board::boards])
         .mount("/", routes![frontend::board::board])
         .mount("/", routes![frontend::board::new_board])
+        .register("/", catchers![unauthorized])
         .ignite()
         .await
         .context(RocketSnafu)?;
