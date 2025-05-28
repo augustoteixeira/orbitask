@@ -9,11 +9,13 @@ pub fn note_list(notes: Vec<Note>) -> Markup {
           padding: 1rem;
           border: 1px solid var(--muted-border);
           border-radius: 0.5rem;
+          margin: 0rem;
         " {
-            section {
+            section style="margin-bottom: 0rem"{
               a { (note.name) }
             }
-            p style="font-size: 0.9em; color: var(--muted-color);" {
+            p style=r#"font-size: 0.9em; color: var(--muted-color);
+                       margin-bottom: 0rem"# {
               "From " (note.start_date) " to " (note.due_date)
             }
 

@@ -54,7 +54,7 @@ pub fn state_render(state_view: StateView) -> Markup {
       border: 1px solid var(--muted-border);
       border-radius: 0.5rem;
     "# {
-        h3 { (state_view.state.name) }
+        h3 style="margin-bottom: 0.5rem" { (state_view.state.name) }
 
         @if state_view.state.is_finished {
           p style="font-size: 0.75em; color: var(--muted-color);" {
