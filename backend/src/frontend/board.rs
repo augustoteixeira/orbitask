@@ -308,12 +308,12 @@ pub async fn new_note(
           input type="text" id="name" name="name" required;
 
           label for="start_date" { "Start date (YYYY-MM-DD)" }
-          input type="text" id="start_date" name="start_date"
-                placeholder="2025-06-01" required;
+          input type="date" id="start_date" name="start_date"
+                value="yyyy-mm-dd" required;
 
           label for="due_date" { "Due date (YYYY-MM-DD)" }
-          input type="text" id="due_date" name="due_date"
-                placeholder="2025-06-10" required;
+          input type="date" id="due_date" name="due_date"
+                value="yyyy-mm-dd" required;
 
           button type="submit" class="contrast" { "Create Note" }
         }
