@@ -142,3 +142,107 @@ pub async fn move_state(
 
     Ok(state)
 }
+
+pub async fn create_state(
+    db: &mut Connection<Db>,
+    board_id: i64,
+    name: String,
+    is_finished: bool,
+) -> Result<State, sqlx::Error> {
+    // Step 1: get the current max position for the board
+    let max_pos: Option<i64> = sqlx::query_scalar(
+        "SELECT MAX(position) FROM states WHERE board_id = ?",
+    )
+    .bind(board_id)
+    .fetch_one(&mut ***db)
+    .await?;
+
+    let new_pos = max_pos.unwrap_or(-1) + 1;
+
+    // Step 2: insert the new state
+    let state = sqlx::query_as::<_, State>(
+        r#"
+    INSERT INTO states (board_id, name, is_finished, position)
+    VALUES (?, ?, ?, ?)
+    RETURNING id, board_id, name, is_finished, position
+    "#,
+    )
+    .bind(board_id)
+    .bind(name)
+    .bind(is_finished)
+    .bind(new_pos)
+    .fetch_one(&mut ***db)
+    .await?;
+
+    Ok(state)
+}
+
+pub async fn delete_state(
+    db: &mut Connection<Db>,
+    state_id: i64,
+) -> Result<Option<State>, DbError> {
+    // Step 1: fetch the state if it exists
+    let state = sqlx::query_as::<_, State>(
+        "SELECT id, board_id, name, is_finished, position FROM states WHERE id = ?"
+    )
+    .bind(state_id)
+    .fetch_optional(&mut ***db)
+    .await
+    .context(SqlxSnafu)?;
+
+    // 2. If it exists, delete and reorder
+    if let Some(ref s) = state {
+        // 2a. Delete the state
+        sqlx::query("DELETE FROM states WHERE id = ?")
+            .bind(state_id)
+            .execute(&mut ***db)
+            .await
+            .context(SqlxSnafu)?;
+
+        // 2b. Shift down all states with higher position
+        sqlx::query(
+            "UPDATE states
+             SET position = position - 1
+             WHERE board_id = ? AND position > ?",
+        )
+        .bind(s.board_id)
+        .bind(s.position)
+        .execute(&mut ***db)
+        .await
+        .context(SqlxSnafu)?;
+    }
+
+    Ok(state)
+}
+
+pub async fn rename_state(
+    db: &mut Connection<Db>,
+    state_id: i64,
+    new_name: String,
+) -> Result<Option<State>, DbError> {
+    // Step 1: Fetch the state (optional)
+    let mut state = sqlx::query_as::<_, State>(
+        "SELECT id, board_id, name, is_finished, position FROM states WHERE id = ?"
+    )
+    .bind(state_id)
+    .fetch_optional(&mut ***db)
+    .await
+    .context(SqlxSnafu)?;
+
+    // Step 2: Update if it exists
+    if state.is_some() {
+        sqlx::query("UPDATE states SET name = ? WHERE id = ?")
+            .bind(&new_name)
+            .bind(state_id)
+            .execute(&mut ***db)
+            .await
+            .context(SqlxSnafu)?;
+
+        // Update the name in the struct too
+        if let Some(ref mut s) = state {
+            s.name = new_name;
+        }
+    }
+
+    Ok(state)
+}

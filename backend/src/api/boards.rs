@@ -1,4 +1,6 @@
 use crate::db_manage::boards::create_board;
+use crate::db_manage::notes::create_note;
+use crate::db_manage::states::create_state;
 use crate::Db;
 
 use crate::api::Authenticated;
@@ -39,6 +41,100 @@ pub async fn create_board_submit(
             Err(Flash::error(
                 Redirect::to("/boards/new"),
                 "Could not create board",
+            ))
+        }
+    }
+}
+
+#[derive(FromForm)]
+pub struct CreateStateForm {
+    pub name: String,
+    pub is_finished: bool,
+}
+
+#[post("/boards/<id>/create_state", data = "<form>")]
+pub async fn create_state_submit(
+    _auth: Authenticated,
+    mut db: Connection<Db>,
+    id: i64,
+    form: Form<CreateStateForm>,
+) -> Result<Flash<Redirect>, Flash<Redirect>> {
+    let CreateStateForm { name, is_finished } = form.into_inner();
+
+    // Empty names are not allowed
+    if name.trim().is_empty() {
+        return Err(Flash::error(
+            Redirect::to(format!("/boards/{id}/settings")),
+            "State name cannot be empty.",
+        ));
+    }
+
+    match create_state(&mut db, id, name, is_finished).await {
+        Ok(_) => Ok(Flash::success(
+            Redirect::to(format!("/boards/{id}/settings")),
+            "State created successfully.",
+        )),
+        Err(_) => Err(Flash::error(
+            Redirect::to(format!("/boards/{id}/settings")),
+            "Failed to create state.",
+        )),
+    }
+}
+
+#[derive(FromForm)]
+pub struct CreateNoteForm {
+    pub name: String,
+    pub start_date: String,
+    pub due_date: String,
+    pub template_id: Option<i64>,
+}
+
+#[post("/boards/<id>/states/<state_id>/notes", data = "<form>")]
+pub async fn create_note_submit(
+    _auth: Authenticated,
+    mut db: Connection<Db>,
+    id: i64,
+    state_id: i64,
+    form: Form<CreateNoteForm>,
+) -> Result<Flash<Redirect>, Flash<Redirect>> {
+    let CreateNoteForm {
+        name,
+        start_date,
+        due_date,
+        template_id,
+    } = form.into_inner();
+
+    // Empty names are not allowed
+    if name.trim().is_empty() {
+        return Err(Flash::error(
+            Redirect::to(format!("/boards/{id}")),
+            "Note name cannot be empty.",
+        ));
+    }
+
+    match create_note(
+        &mut db,
+        id,
+        state_id,
+        name,
+        start_date,
+        due_date,
+        template_id,
+    )
+    .await
+    {
+        Ok(_) => {
+            println!("AAA");
+            Ok(Flash::success(
+                Redirect::to(format!("/boards/{id}")),
+                "Note created successfully.",
+            ))
+        }
+        Err(e) => {
+            println!("BBB {e}");
+            Err(Flash::error(
+                Redirect::to(format!("/boards/{id}")),
+                "Failed to create note.",
             ))
         }
     }

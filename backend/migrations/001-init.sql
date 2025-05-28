@@ -88,7 +88,7 @@ CREATE TABLE states (
 CREATE TABLE notes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     board_id INTEGER NOT NULL,
-    factory_id INTEGER, -- nullable if manually created
+    --factory_id INTEGER, -- nullable if manually created
 
     state_id INTEGER NOT NULL,
     name TEXT NOT NULL,
@@ -96,7 +96,7 @@ CREATE TABLE notes (
     due_date TEXT NOT NULL,
 
     FOREIGN KEY (board_id) REFERENCES boards(id) ON DELETE CASCADE,
-    FOREIGN KEY (factory_id) REFERENCES factories(id) ON DELETE SET NULL,
+    --FOREIGN KEY (factory_id) REFERENCES factories(id) ON DELETE SET NULL,
     FOREIGN KEY (state_id) REFERENCES states(id) ON DELETE RESTRICT
 );
 

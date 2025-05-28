@@ -11,6 +11,7 @@ use utils::RateLimiter;
 
 use bcrypt::{hash, DEFAULT_COST};
 use rocket::figment::Figment;
+use rocket::fs::FileServer;
 use rocket::response::{Flash, Redirect};
 use rocket::Config;
 use rocket_db_pools::{sqlx, Database};
@@ -42,15 +43,21 @@ async fn main() -> Result<(), Error> {
     let rocket = rocket::custom(rocket_config())
         .manage(RateLimiter::new())
         .attach(Db::init())
+        .mount("/static", FileServer::from("static"))
         .mount("/", routes![api::login_submit])
         .mount("/", routes![api::logout_submit])
         .mount("/", routes![api::create_board_submit])
         .mount("/", routes![api::move_state_api])
+        .mount("/", routes![api::create_state_submit])
+        .mount("/", routes![api::create_note_submit])
+        .mount("/", routes![api::delete_state_api])
+        .mount("/", routes![api::rename_state_api])
         .mount("/", routes![frontend::login::login])
         .mount("/", routes![frontend::board::boards])
         .mount("/", routes![frontend::board::board])
         .mount("/", routes![frontend::board::board_settings])
         .mount("/", routes![frontend::board::new_board])
+        .mount("/", routes![frontend::board::new_note])
         .register("/", catchers![unauthorized])
         .ignite()
         .await

@@ -5,9 +5,11 @@ use rocket::Request;
 pub mod login;
 pub use login::{login_submit, logout_submit};
 pub mod boards;
-pub use boards::create_board_submit;
+pub use boards::{
+    create_board_submit, create_note_submit, create_state_submit,
+};
 pub mod states;
-pub use states::move_state_api;
+pub use states::{delete_state_api, move_state_api, rename_state_api};
 
 pub struct Authenticated;
 

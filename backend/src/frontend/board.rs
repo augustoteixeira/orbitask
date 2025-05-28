@@ -1,11 +1,13 @@
 use crate::Db;
-use maud::{html, Markup, DOCTYPE};
+use maud::{html, Markup};
+use rocket::http::uri;
 use rocket::request::FlashMessage;
 use rocket::response::{Flash, Redirect};
 
 use super::state::{get_state_view, states_grid, StateView};
-use super::style::{base_flash, footer, header, meta, sidebar_style};
+use super::style::{base_flash, render, Page};
 use super::tags::{render_tags, Tag};
+use crate::api::boards::rocket_uri_macro_create_note_submit;
 use crate::api::Authenticated;
 use crate::db_manage::{
     get_all_boards, get_board, get_states_for_board, get_tags_from_board, Board,
@@ -47,7 +49,7 @@ pub fn boards_grid(boards: Vec<Board>) -> Markup {
         @for board in boards {
           article style=r#"
             padding: 1rem; border: 1px solid var(--muted-border);
-            border-radius: 0.5rem;
+            border-radius: 0.5rem; margin: 0.5rem;
           "# {
               a href={(format!("/boards/{}", board.id))} {
                 (board.name)
@@ -70,39 +72,21 @@ pub async fn boards(
     mut db: Connection<Db>,
 ) -> Result<Markup, Flash<Redirect>> {
     let boards = get_all_boards(&mut db, false).await.unwrap();
-    let markup = html! {
-      (DOCTYPE)
-      html {
-        head {
-          (meta())
-          title { "Boards" }
-
-          (sidebar_style())
-        }
-        (base_flash(flash))
-        body {
-          (header())
-
+    let contents = html! {
           main {
-            section class="layout" {
-              aside class="sidebar" {
-                h2 { "Boards" }
-              }
-
-              section class="main" {
-                h2 { "Welcome to your boards" }
-                p { "Select a board to see its notes." }
-                (boards_grid(boards))
-                a href="/boards/new" role="button" { "Create New Board" }
-              }
+            section class="main" {
+              h2 { "Welcome to your boards" }
+              (boards_grid(boards))
+              a href="/boards/new" role="button" { "Create New Board" }
             }
           }
-
-          (footer())
-        }
-      }
     };
-    Ok(markup)
+    let page = Page {
+        title: html! {title {"Boards"}},
+        flash: base_flash(flash),
+        contents,
+    };
+    return Ok(render(page));
 }
 
 #[get("/boards/<id>")]
@@ -113,54 +97,44 @@ pub async fn board(
     mut db: Connection<Db>,
 ) -> Result<Markup, Flash<Redirect>> {
     let board_view = get_board_view(&mut db, id).await.unwrap();
-    let markup = html! {
-      (DOCTYPE)
-      html {
-        head {
-          (meta())
-          title { "Board" }
-
-          (sidebar_style())
-        }
-        body {
-          (header())
-
-        main class="container" {
-          section {
-            nav style="margin-bottom: 1rem;" {
-              a href="/boards" role="button" {
-                "← Back to Boards"
-              }
+    let contents = html! {
+      main class="container" {
+        section {
+          nav style="margin-bottom: 1rem;" {
+            a href="/boards" role="button" {
+              "← Back to Boards"
             }
-            // Title + Settings aligned
-            div style=r#"display: flex; justify-content: space-between;
-                         align-items: center;"# {
-              h1 style="margin: 0;" { (board_view.board.name) }
-              a href={(format!("/boards/{}/settings", board_view.board.id))}
-                               title="Board settings" {
-                "Settings"
-              }
-            }
-
-            @if board_view.board.is_template {
-              p style="color: var(--muted-color); font-style: italic;" {
-                "This board is a template."
-              }
-            }
-
-            (render_tags(board_view.tags))
-
-            hr;
-
-            (states_grid(board_view.state_views))
           }
-        }
-          (base_flash(flash))
-          (footer())
+          // Title + Settings aligned
+          div style=r#"display: flex; justify-content: space-between;
+                       align-items: center;"# {
+            h1 style="margin: 0;" { (board_view.board.name) }
+            a href={(format!("/boards/{}/settings", board_view.board.id))}
+                             title="Board settings" {
+              "Settings"
+            }
+          }
+
+          @if board_view.board.is_template {
+            p style="color: var(--muted-color); font-style: italic;" {
+              "This board is a template."
+            }
+          }
+
+          (render_tags(board_view.tags))
+
+          hr;
+
+          (states_grid(board_view.state_views))
         }
       }
     };
-    Ok(markup)
+    let page = Page {
+        title: html! {title {"Boards"}},
+        flash: base_flash(flash),
+        contents,
+    };
+    return Ok(render(page));
 }
 
 #[get("/boards/<id>/settings")]
@@ -171,87 +145,90 @@ pub async fn board_settings(
     mut db: Connection<Db>,
 ) -> Result<Markup, Flash<Redirect>> {
     let board_view = get_board_view(&mut db, id).await.unwrap();
-    Ok(html! {
-                  main class="container" {
-                    head {
-                      (meta())
-                      (header())
-
-                      section {
-                      nav style="margin-bottom: 1rem;" {
-                        a href={(format!("/boards/{}", id))} role="button" { "← Back to Board" }
-                      }
-
-                      h1 { "Board Settings" }
-
-                      (base_flash(flash))
-
-                      h2 { "Add new state" }
-
-    form method="post" action={(format!("/boards/{}/create_state", board_view.board.id))}
-         style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1rem;" {
-
-      input
-        type="text"
-        name="name"
-        placeholder="New state name"
-        required
-        style="flex-grow: 1; min-width: 150px; padding: 0.25rem; font-size: 0.9em;";
-
-      label style="font-size: 0.9em;" {
-        input type="checkbox" name="is_finished";
-        " Finished?"
-      }
-
-      button
-        type="submit"
-        class="secondary"
-      {
-        "Create"
-      }
-    }
-
-                      h2 { "States" }
-
-                      ul style="list-style: none; padding: 0;" {
-            @for state_view in &board_view.state_views {
-              @let state = &state_view.state;
-              article style="margin-bottom: 1rem; padding: 1rem; border: 1px solid var(--muted-border); border-radius: 0.5rem;" {
-                h3 style="margin-bottom: 0.5rem;" { (state.name) }
-        form method="post" action={(format!("/states/{}/rename", state.id))}
-             style="display: flex; gap: 0.5rem; align-items: center; width: 100%;" {
-
-          input
-            type="text"
-            name="new_name"
-            value={(state.name)}
-            required
-            style="flex-grow: 1; min-width: 100px; padding: 0.25rem; font-size: 0.9em;";
-
-          button
-            type="submit"
-            class="secondary"
-          {
-            "Rename"
-          }
-        }
-
-                  form method="post" action={(format!("/states/{}/delete", state.id))}
-             style="margin-top: 0.5rem;" {
-          button
-            type="submit"
-            class="contrast"
-          {
-            "Delete"
-          }
-        }
-
+    let contents = html! {
+        main class="container" {
+          section {
+            nav style="margin-bottom: 1rem;" {
+              a href={(format!("/boards/{}", id))} role="button" {
+                "← Back to Board"
               }
             }
-                      }}
+            h1 { "Board Settings" }
+            h2 { "Add new state" }
+            form method="post"
+              action={(format!("/boards/{}/create_state",
+                               board_view.board.id))}
+              style=r#"display: flex; gap: 0.5rem;
+                       align-items: center; margin-bottom: 1rem;"#
+            {
+              input
+              type="text"
+              name="name"
+              placeholder="New state name"
+              required
+              style=r#"flex-grow: 1; min-width: 150px; padding: 0.25rem;
+                       font-size: 0.9em;"#;
+              label style="font-size: 0.9em;" {
+                input type="checkbox" name="is_finished";
+                " Finished?"
+              }
+              button
+                type="submit"
+                class="secondary"
+              {
+                "Create"
+              }
+            }
+            h2 { "States" }
+            ul style="list-style: none; padding: 0;" {
+              @for state_view in &board_view.state_views {
+                @let state = &state_view.state;
+                  article style=r#"margin-bottom: 1rem; padding: 1rem;
+                                   border: 1px solid var(--muted-border);
+                                   border-radius: 0.5rem;"#
+                  {
+                    h3 style="margin-bottom: 0.5rem;" { (state.name) }
+                    form method="post"
+                         action={(format!("/states/{}/rename", state.id))}
+                         style=r#"display: flex; gap: 0.5rem;
+                                  align-items: center; width: 100%;"#
+                    {
+                      input
+                      type="text"
+                      name="new_name"
+                      value={(state.name)}
+                      required
+                      style=r#"flex-grow: 1; min-width: 100px; padding:
+                               0.25rem; font-size: 0.9em;"#;
+                    button
+                      type="submit"
+                      class="secondary"
+                    {
+                      "Rename"
                     }
                   }
-                })
+                  form method="post"
+                    action={(format!("/states/{}/delete", state.id))}
+                    style="margin-top: 0.5rem;" {
+                      button
+                      type="submit"
+                      class="contrast"
+                  {
+                    "Delete"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    };
+    let page = Page {
+        title: html! {title {"Boards"}},
+        flash: base_flash(flash),
+        contents,
+    };
+    return Ok(render(page));
 }
 
 #[get("/boards/new")]
@@ -266,17 +243,8 @@ pub async fn new_board(
         .filter(|board| board.is_template)
         .map(|board| (board.id, board.name))
         .collect();
-
-    Ok(html! {
-        head {
-          (meta())
-          title { "Boards" }
-
-          (sidebar_style())
-        }
-
+    let contents = html! {
       main class="container" {
-        (base_flash(flash))
         h1 { "Create a New Board" }
 
         form method="post" action="/boards/create" {
@@ -311,5 +279,51 @@ pub async fn new_board(
           button type="submit" class="contrast" { "Create Board" }
         }
       }
-    })
+    };
+
+    let page = Page {
+        title: html! {title {"Boards"}},
+        flash: base_flash(flash),
+        contents,
+    };
+    return Ok(render(page));
+}
+
+#[get("/boards/<board_id>/<state_id>/new_note")]
+pub async fn new_note(
+    _auth: Authenticated,
+    board_id: i64,
+    state_id: i64,
+    flash: Option<FlashMessage<'_>>,
+) -> Result<Markup, Flash<Redirect>> {
+    let contents = html! {
+      main class="container" {
+        h1 { "Create a New Note" }
+
+        form method="post" action={
+            //(format!("/boards/{}/{}", board_id, state_id) + "/create_note")
+            (uri!(create_note_submit(board_id, state_id)))
+        } {
+          label for="name" { "Note name" }
+          input type="text" id="name" name="name" required;
+
+          label for="start_date" { "Start date (YYYY-MM-DD)" }
+          input type="text" id="start_date" name="start_date"
+                placeholder="2025-06-01" required;
+
+          label for="due_date" { "Due date (YYYY-MM-DD)" }
+          input type="text" id="due_date" name="due_date"
+                placeholder="2025-06-10" required;
+
+          button type="submit" class="contrast" { "Create Note" }
+        }
+      }
+    };
+
+    let page = Page {
+        title: html! { title { "New Note" } },
+        flash: base_flash(flash),
+        contents,
+    };
+    Ok(render(page))
 }

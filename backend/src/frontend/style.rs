@@ -1,5 +1,42 @@
-use maud::{html, Markup, DOCTYPE};
+use maud::{html, Markup};
 use rocket::request::FlashMessage;
+
+pub struct Page {
+    pub title: Markup,
+    pub contents: Markup,
+    pub flash: Markup,
+}
+
+pub fn render(page: Page) -> Markup {
+    html! {
+      (maud::DOCTYPE)
+      html lang="en" {
+        head {
+          meta charset="utf-8";
+          meta name="viewport" content="width=device-width, initial-scale=1";
+
+          (page.title)
+
+          // Pico.css CDN
+          link rel="stylesheet"
+               href="https://unpkg.com/@picocss/pico@1.5.10/css/pico.min.css";
+          link rel="icon" type="image/x-icon" href="/static/favicon.png";
+          // Optional custom styles
+          //link rel="stylesheet" href="/static/style.css";
+        }
+
+        body {
+          main class="container" {
+            (header())
+
+            (page.contents)
+
+            (footer())
+          }
+        }
+      }
+    }
+}
 
 pub fn base_flash(flash: Option<FlashMessage<'_>>) -> Markup {
     html! {
@@ -56,7 +93,8 @@ pub fn meta() -> Markup {
       meta charset="utf-8";
       meta name="viewport" content="width=device-width, initial-scale=1.0";
       link rel="stylesheet"
-           href="https://unpkg.com/@picocss/pico@latest/css/pico.classless.min.css";
+      href=r#"https://unpkg.com/@picocss/pico@latest/css/
+              pico.classless.min.css"#;
     }
 }
 

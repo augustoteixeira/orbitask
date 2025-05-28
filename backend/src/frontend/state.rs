@@ -91,6 +91,14 @@ pub fn state_render(state_view: StateView) -> Markup {
           }
         }
 
+        nav style="margin-bottom: 1rem; margin-top: 1rem" {
+          a href={(format!("/boards/{}/{}", state_view.state.board_id,
+                           state_view.state.id) + "/new_note")}
+            role="button" {
+            "New note"
+          }
+        }
+
         (note_list(state_view.notes))
       }
     }
