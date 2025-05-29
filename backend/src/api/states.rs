@@ -1,6 +1,8 @@
 use crate::db_manage::states::{delete_state, move_state, rename_state};
 use crate::Db;
 
+use crate::frontend::board::rocket_uri_macro_board;
+
 use rocket::form::Form;
 use rocket::response::{Flash, Redirect};
 use rocket_db_pools::Connection;
@@ -28,7 +30,7 @@ pub async fn move_state_api(
         Ok(Some(state)) => {
             // Redirect to the board's page to reflect updated state
             Err(Flash::success(
-                Redirect::to(format!("/boards/{}", state.board_id)),
+                Redirect::to(uri!(board(state.board_id))),
                 "State moved",
             ))
         }
@@ -55,7 +57,7 @@ pub async fn delete_state_api(
         Ok(Some(state)) => {
             // Redirect to the board's page to reflect updated state
             Err(Flash::success(
-                Redirect::to(format!("/boards/{}", state.board_id)),
+                Redirect::to(uri!(board(state.board_id))),
                 "State deleted",
             ))
         }
@@ -89,7 +91,7 @@ pub async fn rename_state_api(
         Ok(Some(state)) => {
             // Redirect to the board's page to reflect updated state
             Err(Flash::success(
-                Redirect::to(format!("/boards/{}", state.board_id)),
+                Redirect::to(uri!(board(state.board_id))),
                 "State deleted",
             ))
         }

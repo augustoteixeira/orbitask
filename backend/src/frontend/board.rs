@@ -8,6 +8,9 @@ use super::state::{get_state_view, states_grid, StateView};
 use super::style::{base_flash, render, Page};
 use super::tags::{render_tags, Tag};
 use crate::api::boards::rocket_uri_macro_create_note_submit;
+use crate::api::boards::rocket_uri_macro_create_state_submit;
+use crate::api::states::rocket_uri_macro_delete_state_api;
+use crate::api::states::rocket_uri_macro_rename_state_api;
 use crate::api::Authenticated;
 use crate::db_manage::{
     get_all_boards, get_board, get_states_for_board, get_tags_from_board, Board,
@@ -51,7 +54,7 @@ pub fn boards_grid(boards: Vec<Board>) -> Markup {
             padding: 1rem; border: 1px solid var(--muted-border);
             border-radius: 0.5rem; margin: 0.5rem;
           "# {
-              a href={(format!("/boards/{}", board.id))} {
+              a href={(uri!(board(board.id)))} {
                 (board.name)
               }
             @if board.is_template {
@@ -109,7 +112,7 @@ pub async fn board(
           div style=r#"display: flex; justify-content: space-between;
                        align-items: center;"# {
             h1 style="margin: 0;" { (board_view.board.name) }
-            a href={(format!("/boards/{}/settings", board_view.board.id))}
+            a href={(uri!(board_settings(board_view.board.id)))}
                              title="Board settings" {
               "Settings"
             }
@@ -149,15 +152,14 @@ pub async fn board_settings(
         main class="container" {
           section {
             nav style="margin-bottom: 1rem;" {
-              a href={(format!("/boards/{}", id))} role="button" {
+              a href={(uri!(board(id)))} role="button" {
                 "← Back to Board"
               }
             }
             h1 { "Board Settings" }
             h2 { "Add new state" }
             form method="post"
-              action={(format!("/boards/{}/create_state",
-                               board_view.board.id))}
+              action={(uri!(create_state_submit(board_view.board.id)))}
               style=r#"display: flex; gap: 0.5rem;
                        align-items: center; margin-bottom: 1rem;"#
             {
@@ -189,7 +191,7 @@ pub async fn board_settings(
                   {
                     h3 style="margin-bottom: 0.5rem;" { (state.name) }
                     form method="post"
-                         action={(format!("/states/{}/rename", state.id))}
+                         action={(uri!(rename_state_api(state.id)))}
                          style=r#"display: flex; gap: 0.5rem;
                                   align-items: center; width: 100%;"#
                     {
@@ -208,7 +210,7 @@ pub async fn board_settings(
                     }
                   }
                   form method="post"
-                    action={(format!("/states/{}/delete", state.id))}
+                    action={(uri!(delete_state_api(state.id)))}
                     style="margin-top: 0.5rem;" {
                       button
                       type="submit"
@@ -301,7 +303,6 @@ pub async fn new_note(
         h1 { "Create a New Note" }
 
         form method="post" action={
-            //(format!("/boards/{}/{}", board_id, state_id) + "/create_note")
             (uri!(create_note_submit(board_id, state_id)))
         } {
           label for="name" { "Note name" }

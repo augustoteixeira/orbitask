@@ -4,6 +4,8 @@ use crate::db_manage::states::create_state;
 use crate::Db;
 
 use crate::api::Authenticated;
+use crate::frontend::board::rocket_uri_macro_board;
+use crate::frontend::board::rocket_uri_macro_board_settings;
 use rocket::form::Form;
 use rocket::response::{Flash, Redirect};
 use rocket_db_pools::Connection;
@@ -33,7 +35,7 @@ pub async fn create_board_submit(
 
     match create_board(&mut db, form.name, is_template, template_id).await {
         Ok(new_id) => Err(Flash::success(
-            Redirect::to(format!("/boards/{}", new_id)),
+            Redirect::to(uri!(board(new_id))),
             "Board created!",
         )),
         Err(err) => {
@@ -64,18 +66,18 @@ pub async fn create_state_submit(
     // Empty names are not allowed
     if name.trim().is_empty() {
         return Err(Flash::error(
-            Redirect::to(format!("/boards/{id}/settings")),
+            Redirect::to(uri!(board_settings(id))),
             "State name cannot be empty.",
         ));
     }
 
     match create_state(&mut db, id, name, is_finished).await {
         Ok(_) => Ok(Flash::success(
-            Redirect::to(format!("/boards/{id}/settings")),
+            Redirect::to(uri!(board_settings(id))),
             "State created successfully.",
         )),
         Err(_) => Err(Flash::error(
-            Redirect::to(format!("/boards/{id}/settings")),
+            Redirect::to(uri!(board_settings(id))),
             "Failed to create state.",
         )),
     }
@@ -107,7 +109,7 @@ pub async fn create_note_submit(
     // Empty names are not allowed
     if name.trim().is_empty() {
         return Err(Flash::error(
-            Redirect::to(format!("/boards/{id}")),
+            Redirect::to(uri!(board(id))),
             "Note name cannot be empty.",
         ));
     }
@@ -123,19 +125,13 @@ pub async fn create_note_submit(
     )
     .await
     {
-        Ok(_) => {
-            println!("AAA");
-            Ok(Flash::success(
-                Redirect::to(format!("/boards/{id}")),
-                "Note created successfully.",
-            ))
-        }
-        Err(e) => {
-            println!("BBB {e}");
-            Err(Flash::error(
-                Redirect::to(format!("/boards/{id}")),
-                "Failed to create note.",
-            ))
-        }
+        Ok(_) => Ok(Flash::success(
+            Redirect::to(uri!(board(id))),
+            "Note created successfully.",
+        )),
+        Err(e) => Err(Flash::error(
+            Redirect::to(uri!(board(id))),
+            "Failed to create note.",
+        )),
     }
 }

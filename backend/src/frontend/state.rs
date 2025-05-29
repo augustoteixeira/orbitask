@@ -1,3 +1,5 @@
+use crate::api::states::rocket_uri_macro_move_state_api;
+use crate::frontend::board::rocket_uri_macro_new_note;
 use maud::{html, Markup};
 
 use crate::db_manage::{
@@ -49,11 +51,22 @@ pub fn state_render(state_view: StateView) -> Markup {
     let id = state_view.state.id;
 
     html! {
-      article style=r#"
-      padding: 1rem;
-      border: 1px solid var(--muted-border);
-      border-radius: 0.5rem;
-    "# {
+      article style={@if state_view.state.is_finished {
+         r#"
+         padding: 1rem;
+         border: 1px solid var(--muted-border);
+         border-radius: 0.5rem;
+         background: var(--muted-border-color);
+         "#
+        } @else {
+         r#"
+         padding: 1rem;
+         border: 1px solid var(--muted-border);
+         border-radius: 0.5rem;
+         "#
+        }
+      }
+      {
         h3 style="margin-bottom: 0.5rem" { (state_view.state.name) }
 
         @if state_view.state.is_finished {
@@ -67,7 +80,7 @@ pub fn state_render(state_view: StateView) -> Markup {
         }
 
         // Move buttons
-        form method="post" action={(format!("/states/{}/move", id))} style="display: flex; gap: 0.5rem; align-items: center; margin: 0.5rem 0;" {
+        form method="post" action={(uri!(move_state_api(id)))} style="display: flex; gap: 0.5rem; align-items: center; margin: 0.5rem 0;" {
           input type="hidden" name="old_position" value={(pos)};
 
           @if pos > 0 {
@@ -92,9 +105,11 @@ pub fn state_render(state_view: StateView) -> Markup {
         }
 
         nav style="margin-bottom: 1rem; margin-top: 1rem" {
-          a href={(format!("/boards/{}/{}", state_view.state.board_id,
-                           state_view.state.id) + "/new_note")}
-            role="button" {
+          a href={(uri!(new_note(state_view.state.board_id,
+                           state_view.state.id)))}
+            role="button"
+            style="padding: 0.2em 0.5em; font-size: 1em;"
+            {
             "New note"
           }
         }
