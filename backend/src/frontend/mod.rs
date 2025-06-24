@@ -1,6 +1,3 @@
-pub mod board;
 pub mod login;
-pub mod note;
-pub mod state;
+pub mod notes;
 pub mod style;
-pub mod tags;

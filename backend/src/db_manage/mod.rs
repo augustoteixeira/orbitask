@@ -5,14 +5,14 @@ use rocket_db_pools::Database;
 
 pub mod login;
 pub use login::{get_password, set_password};
-pub mod boards;
-pub use boards::{get_all_boards, get_board, Board};
-pub mod tags;
-pub use tags::{get_tags_from_board, Tag};
-pub mod states;
-pub use states::{get_state, get_states_for_board, State};
 pub mod notes;
-pub use notes::{get_notes_for_state, Note};
+pub use notes::{create_note, get_note};
+pub mod attributes;
+pub use attributes::create_attribute;
+pub mod codes;
+pub use codes::create_code;
+pub mod logs;
+pub use logs::create_log;
 pub mod errors;
 
 #[derive(Database)]

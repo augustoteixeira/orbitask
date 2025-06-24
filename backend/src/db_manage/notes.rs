@@ -7,56 +7,50 @@ use super::Db;
 #[derive(Debug, FromRow)]
 pub struct Note {
     pub id: i64,
-    pub board_id: i64,
-    pub state_id: i64,
-    pub name: String,
-    pub start_date: String, // Consider using `chrono::NaiveDate` later
-    pub due_date: String,
-}
-
-pub async fn get_notes_for_state(
-    db: &mut Connection<Db>,
-    state_id: i64,
-) -> Result<Vec<Note>, sqlx::Error> {
-    let notes = sqlx::query_as::<_, Note>(
-        r#"
-        SELECT id, board_id, state_id, name, start_date, due_date
-        FROM notes
-        WHERE state_id = ?
-        ORDER BY due_date
-        "#,
-    )
-    .bind(state_id)
-    .fetch_all(&mut ***db) // Triple deref to get &mut SqliteConnection
-    .await?;
-
-    Ok(notes)
+    pub parent_id: Option<i64>,
+    pub title: String,
+    pub description: String,
+    pub code_name: Option<String>,
 }
 
 pub async fn create_note(
     db: &mut Connection<Db>,
-    board_id: i64,
-    state_id: i64,
-    name: String,
-    start_date: String,
-    due_date: String,
-    template_id: Option<i64>,
+    parent_id: Option<i64>,
+    title: String,
+    description: String,
+    code_name: Option<String>,
 ) -> Result<i64, sqlx::Error> {
     let row = sqlx::query(
         r#"
-        INSERT INTO notes (board_id, state_id, name, start_date, due_date)
-        VALUES (?, ?, ?, ?, ?)
-        RETURNING id
-        "#,
+      INSERT INTO notes (parent_id, title, description, code_name)
+      VALUES (?, ?, ?, ?)
+      "#,
     )
-    .bind(board_id)
-    .bind(state_id)
-    .bind(name)
-    .bind(start_date)
-    .bind(due_date)
+    .bind(&parent_id)
+    .bind(&title)
+    .bind(&description)
+    .bind(&code_name)
     .fetch_one(&mut ***db)
     .await?;
 
-    let id: i64 = row.try_get("id")?;
-    Ok(id)
+    let new_note_id: i64 = row.get("id");
+    Ok(new_note_id)
+}
+
+pub async fn get_note(
+    db: &mut Connection<Db>,
+    note_id: i64,
+) -> Result<Option<Note>, sqlx::Error> {
+    let note = sqlx::query_as::<_, Note>(
+        r#"
+        SELECT id, parent_id, title, description, code_name
+        FROM notes
+        WHERE id = ?
+        "#,
+    )
+    .bind(note_id)
+    .fetch_optional(&mut ***db)
+    .await?;
+
+    Ok(note)
 }

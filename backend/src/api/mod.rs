@@ -4,12 +4,14 @@ use rocket::Request;
 
 pub mod login;
 pub use login::{login_submit, logout_submit};
-pub mod boards;
-pub use boards::{
-    create_board_submit, create_note_submit, create_state_submit,
-};
-pub mod states;
-pub use states::{delete_state_api, move_state_api, rename_state_api};
+pub mod codes;
+pub use codes::create_code_submit;
+pub mod attributes;
+pub use attributes::create_attribute_submit;
+pub mod logs;
+pub use logs::create_log_submit;
+pub mod notes;
+pub use notes::create_note_submit;
 
 pub struct Authenticated;
 
