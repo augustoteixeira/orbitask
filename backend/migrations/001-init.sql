@@ -37,3 +37,5 @@ CREATE TABLE logs (
 
   FOREIGN KEY (note_id) REFERENCES notes(id) ON DELETE CASCADE
 );
+
+INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '1');

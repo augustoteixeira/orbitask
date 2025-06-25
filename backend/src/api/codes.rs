@@ -3,6 +3,7 @@ use rocket::response::{Flash, Redirect};
 use rocket::{get, post};
 use rocket_db_pools::Connection;
 
+use crate::api::Authenticated;
 use crate::db_manage::{self, attributes::Attribute, codes::Code, logs::Log};
 use crate::Db;
 
@@ -14,6 +15,7 @@ pub struct NewCodeForm {
 
 #[post("/codes", data = "<form>")]
 pub async fn create_code_submit(
+    _auth: Authenticated,
     mut db: Connection<Db>,
     form: Form<NewCodeForm>,
 ) -> Result<Flash<Redirect>, Flash<Redirect>> {
