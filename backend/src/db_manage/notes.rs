@@ -54,3 +54,17 @@ pub async fn get_note(
 
     Ok(note)
 }
+
+pub async fn get_child_notes(
+    db: &mut Connection<Db>,
+    note_id: i64,
+) -> Result<Vec<Note>, sqlx::Error> {
+    let notes = sqlx::query_as::<_, Note>(
+        "SELECT id, parent_id, title, description, code_name FROM notes WHERE parent_id = ? ORDER BY id"
+    )
+    .bind(note_id)
+    .fetch_all(&mut ***db)
+    .await?;
+
+    Ok(notes)
+}

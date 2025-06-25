@@ -6,7 +6,7 @@ use rocket_db_pools::Database;
 pub mod login;
 pub use login::{get_password, set_password};
 pub mod notes;
-pub use notes::{create_note, get_note};
+pub use notes::{create_note, get_child_notes, get_note, Note};
 pub mod attributes;
 pub use attributes::create_attribute;
 pub mod codes;

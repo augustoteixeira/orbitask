@@ -6,18 +6,9 @@ use rocket::response::{Flash, Redirect};
 use rocket_db_pools::Connection;
 
 use crate::api::Authenticated;
-use crate::db_manage::get_note;
+use crate::db_manage::{get_child_notes, get_note, Note};
 use crate::frontend::style::{base_flash, render, Page};
 use crate::sqlx::FromRow;
-
-#[derive(Debug, FromRow)]
-pub struct Note {
-    pub id: i64,
-    pub title: String,
-    pub description: String,
-    pub parent_id: Option<i64>,
-    pub code_name: Option<String>,
-}
 
 pub fn notes_grid(notes: Vec<Note>) -> Markup {
     html! {
@@ -91,6 +82,10 @@ pub async fn show_note(
         }
     };
 
+    let child_notes = get_child_notes(&mut db, id).await.unwrap();
+
+    let rendered_children = notes_grid(child_notes);
+
     let contents = html! {
         main class="container" {
             h1 { (note.title) }
@@ -99,6 +94,7 @@ pub async fn show_note(
             }
             p { (note.description) }
             a href="/notes" { "← Back to Notes" }
+            (rendered_children);
         }
     };
     //let contents = html! { main { hi { "A" } } };
