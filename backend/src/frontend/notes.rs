@@ -6,7 +6,7 @@ use rocket::response::{Flash, Redirect};
 use rocket_db_pools::Connection;
 
 use crate::api::Authenticated;
-use crate::db_manage::{get_child_notes, get_note, Note};
+use crate::db_manage::{get_child_notes, get_note, get_root_notes, Note};
 use crate::frontend::style::{base_flash, render, Page};
 use crate::sqlx::FromRow;
 
@@ -38,29 +38,29 @@ pub fn notes_grid(notes: Vec<Note>) -> Markup {
     }
 }
 
-// #[get("/notes")]
-// pub async fn notes_page(
-//     flash: Option<FlashMessage<'_>>,
-//     _auth: Authenticated,
-//     mut db: Connection<Db>,
-// ) -> Result<Markup, Flash<Redirect>> {
-//     let notes = get_all_notes(&mut db).await.unwrap_or_default();
-//     let contents = html! {
-//       main {
-//         section class="main" {
-//           h2 { "Your Notes" }
-//           (notes_grid(notes))
-//           a href="/notes/new" role="button" { "Create New Note" }
-//         }
-//       }
-//     };
-//     let page = Page {
-//         title: html! {title {"Notes"}},
-//         flash: base_flash(flash),
-//         contents,
-//     };
-//     Ok(render(page))
-// }
+#[get("/")]
+pub async fn root_notes(
+    flash: Option<FlashMessage<'_>>,
+    _auth: Authenticated,
+    mut db: Connection<Db>,
+) -> Result<Markup, Flash<Redirect>> {
+    let notes = get_root_notes(&mut db).await.unwrap_or_default();
+    let contents = html! {
+      main {
+        section class="main" {
+          h2 { "Home" }
+          (notes_grid(notes))
+          a href="/notes/new" role="button" { "Create New Note" }
+        }
+      }
+    };
+    let page = Page {
+        title: html! {title {"Notes"}},
+        flash: base_flash(flash),
+        contents,
+    };
+    Ok(render(page))
+}
 
 #[get("/notes/<id>")]
 pub async fn show_note(
@@ -88,12 +88,16 @@ pub async fn show_note(
 
     let contents = html! {
         main class="container" {
+            a href="/" { "← Back to Notes" }
+            @if let Some(id) = note.parent_id {
+              br;
+              a href=(uri!(show_note(id))) { "← Back to Parent" }
+            }
             h1 { (note.title) }
             p style="color: var(--muted-color); font-size: 0.9em;" {
                 "Code: " (note.code_name.unwrap_or("NONE".to_string()))
             }
             p { (note.description) }
-            a href="/notes" { "← Back to Notes" }
             (rendered_children);
         }
     };

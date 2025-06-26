@@ -1,20 +1,20 @@
+* means that the task is essential for an MVP
+
 Features
 --------
 
 - DB/API
-  - [ ] create new note
+  - [ ] * create new note
   - [ ] delete note
-  - [ ] get all root notes
 - Frontend
-  - [ ] create new note
+  - [ ] * create new note
   - [ ] delete note
-  - [ ] hide done notes
+  - [ ] hide or change the apperence of done notes
   - [ ] breadcrumbs for ancestors
-  - [ ] root notes at `/`
 - Coding
-  - [ ] add trait for codes
-  - [ ] implement basic form which is an enum of primitive types
-  - [ ] implement `None` code with `done` form
+  - [ ] * add trait for codes
+  - [ ] * implement basic form which is an enum of primitive types
+  - [ ] * implement `None` code with `done` form
 
 Improvements
 ------------
