@@ -1,10 +1,10 @@
 use rocket::form::Form;
+use rocket::post;
 use rocket::response::{Flash, Redirect};
-use rocket::{get, post};
 use rocket_db_pools::Connection;
 
 use crate::api::Authenticated;
-use crate::db_manage::{self, attributes::Attribute, codes::Code, logs::Log};
+use crate::db_manage;
 use crate::Db;
 
 #[derive(FromForm)]

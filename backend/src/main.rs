@@ -49,6 +49,7 @@ async fn main() -> Result<(), Error> {
         .mount("/", routes![api::create_note_submit])
         .mount("/", routes![frontend::login::login])
         .mount("/", routes![frontend::notes::show_note])
+        .mount("/", routes![frontend::notes::new_note])
         .mount("/", routes![frontend::notes::root_notes])
         .register("/", catchers![unauthorized])
         .ignite()

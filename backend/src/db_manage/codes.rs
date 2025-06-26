@@ -28,3 +28,14 @@ pub async fn create_code(
     let new_attribute_id: i64 = row.get("id");
     Ok(new_attribute_id)
 }
+
+pub async fn get_all_code_names(
+    db: &mut Connection<Db>,
+) -> Result<Vec<String>, sqlx::Error> {
+    let names =
+        sqlx::query_scalar::<_, String>("SELECT name FROM codes ORDER BY name")
+            .fetch_all(&mut ***db)
+            .await?;
+
+    Ok(names)
+}

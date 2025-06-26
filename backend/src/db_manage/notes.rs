@@ -20,6 +20,7 @@ pub async fn create_note(
     description: String,
     code_name: Option<String>,
 ) -> Result<i64, sqlx::Error> {
+    println!("{parent_id:?}, {title:?}, {description:?}, {code_name:?}");
     let row = sqlx::query(
         r#"
       INSERT INTO notes (parent_id, title, description, code_name)
@@ -30,11 +31,18 @@ pub async fn create_note(
     .bind(&title)
     .bind(&description)
     .bind(&code_name)
-    .fetch_one(&mut ***db)
+    .execute(&mut ***db)
     .await?;
 
-    let new_note_id: i64 = row.get("id");
-    Ok(new_note_id)
+    // Now get the last inserted row ID
+    let row: (i64,) = sqlx::query_as("SELECT last_insert_rowid()")
+        .fetch_one(&mut ***db)
+        .await?;
+
+    let inserted_id = row.0;
+
+    //let new_note_id: i64 = row.get("id");
+    Ok(inserted_id)
 }
 
 pub async fn get_note(

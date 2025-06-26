@@ -4,12 +4,9 @@ use rocket::Request;
 
 pub mod login;
 pub use login::{login_submit, logout_submit};
-pub mod codes;
-pub use codes::create_code_submit;
 pub mod attributes;
-pub use attributes::create_attribute_submit;
+pub mod codes;
 pub mod logs;
-pub use logs::create_log_submit;
 pub mod notes;
 pub use notes::create_note_submit;
 

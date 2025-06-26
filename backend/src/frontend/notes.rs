@@ -1,6 +1,6 @@
+use crate::db_manage::codes::get_all_code_names;
 use crate::Db;
 use maud::{html, Markup};
-use rocket::http::uri;
 use rocket::request::FlashMessage;
 use rocket::response::{Flash, Redirect};
 use rocket_db_pools::Connection;
@@ -8,7 +8,6 @@ use rocket_db_pools::Connection;
 use crate::api::Authenticated;
 use crate::db_manage::{get_child_notes, get_note, get_root_notes, Note};
 use crate::frontend::style::{base_flash, render, Page};
-use crate::sqlx::FromRow;
 
 pub fn notes_grid(notes: Vec<Note>) -> Markup {
     html! {
@@ -50,7 +49,7 @@ pub async fn root_notes(
         section class="main" {
           h2 { "Home" }
           (notes_grid(notes))
-          a href="/notes/new" role="button" { "Create New Note" }
+          a href="/notes/new" role="button" { "Create New Root Note" }
         }
       }
     };
@@ -97,6 +96,9 @@ pub async fn show_note(
             p style="color: var(--muted-color); font-size: 0.9em;" {
                 "Code: " (note.code_name.unwrap_or("NONE".to_string()))
             }
+            a href={(uri!(new_note(parent_id = Some(note.id))))} role="button" {
+              "Create Subnote"
+            }
             p { (note.description) }
             (rendered_children);
         }
@@ -108,5 +110,68 @@ pub async fn show_note(
         flash: base_flash(flash),
         contents,
     };
+    Ok(render(page))
+}
+
+pub fn new_note_form(codes: Vec<String>, parent_id: Option<i64>) -> Markup {
+    html! {
+      main class="container" {
+        h1 { "Create New Note" }
+
+        form method="post" action="/notes/new" {
+          label for="title" { "Title" }
+          input type="text" id="title" name="title" required;
+
+          label for="description" { "Description (Markdown)" }
+          textarea id="description" name="description" {};
+
+          label for="code_name" { "Behavior (Code)" }
+          fieldset {
+            legend { "Code" }
+            // Option for "no code"
+            label {
+              input type="radio" name="code_name" value="__none__" required checked;
+              " No code"
+            }
+            // Options for each code name
+            @for code in codes.iter() {
+              label {
+                input type="radio" name="code_name" value=(code);
+                (code)
+              }
+            }
+          }
+
+          @if let Some(pid) = parent_id {
+            input type="hidden" name="parent_id" value=(pid);
+          }
+
+          button type="submit" class="contrast" { "Create Notes" }
+        }
+      }
+    }
+}
+
+#[get("/notes/new?<parent_id>")]
+pub async fn new_note(
+    _auth: Authenticated,
+    parent_id: Option<i64>,
+    mut db: Connection<Db>,
+    flash: Option<FlashMessage<'_>>,
+) -> Result<Markup, Flash<Redirect>> {
+    let codes = get_all_code_names(&mut db).await.map_err(|e| {
+        Flash::error(
+            Redirect::to(uri!(root_notes)),
+            format!("Failed to load code list: {e}."),
+        )
+    })?;
+    let contents = new_note_form(codes, parent_id);
+
+    let page = Page {
+        title: html! { title { "Create New Note" } },
+        flash: base_flash(flash),
+        contents,
+    };
+
     Ok(render(page))
 }

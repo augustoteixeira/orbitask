@@ -4,10 +4,9 @@ Features
 --------
 
 - DB/API
-  - [ ] * create new note
   - [ ] delete note
 - Frontend
-  - [ ] * create new note
+  - [ ] * add everything needed in the note view
   - [ ] delete note
   - [ ] hide or change the apperence of done notes
   - [ ] breadcrumbs for ancestors
