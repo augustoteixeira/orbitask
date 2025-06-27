@@ -1,4 +1,6 @@
-use crate::db_manage::codes::get_all_code_names;
+use crate::db_manage::codes::{
+    get_all_code_names, Action, FormType, UIntField,
+};
 use crate::Db;
 use maud::{html, Markup};
 use rocket::request::FlashMessage;
@@ -7,6 +9,7 @@ use rocket_db_pools::Connection;
 
 use crate::api::Authenticated;
 use crate::db_manage::{get_child_notes, get_note, get_root_notes, Note};
+use crate::frontend::codes::form;
 use crate::frontend::style::{base_flash, render, Page};
 
 pub fn notes_grid(notes: Vec<Note>) -> Markup {
@@ -85,25 +88,57 @@ pub async fn show_note(
 
     let rendered_children = notes_grid(child_notes);
 
-    let contents = html! {
-        main class="container" {
-            a href="/" { "← Back to Notes" }
-            @if let Some(id) = note.parent_id {
-              br;
-              a href=(uri!(show_note(id))) { "← Back to Parent" }
-            }
-            h1 { (note.title) }
-            p style="color: var(--muted-color); font-size: 0.9em;" {
-                "Code: " (note.code_name.unwrap_or("NONE".to_string()))
-            }
-            a href={(uri!(new_note(parent_id = Some(note.id))))} role="button" {
-              "Create Subnote"
-            }
-            p { (note.description) }
-            (rendered_children);
-        }
+    let attributes: Vec<(String, String)> = Vec::new();
+
+    let logs: Vec<String> = Vec::new();
+
+    let uint_description = UIntField {
+        label: "days".to_string(),
+        title: "Days until expiration".to_string(),
     };
-    //let contents = html! { main { hi { "A" } } };
+
+    let form_type: FormType = FormType::UInt(uint_description);
+    let action: Action = Action {
+        label: "delay".to_string(),
+        title: "Delay Task".to_string(),
+        form_type,
+    };
+
+    let contents = html! {
+      main class="container" {
+        a href="/" { "← Back to Notes" }
+        @if let Some(id) = note.parent_id {
+          br;
+          a href=(uri!(show_note(id))) { "← Back to Parent" }
+        }
+        h3 { (note.title) }
+        p style="color: var(--muted-color); font-size: 0.9em;" {
+            "Code: " (note.code_name.unwrap_or("NONE".to_string()))
+        }
+        @for a in attributes {
+            p style="color: var(--muted-color); font-size: 0.9em;" {
+                (a.0) ":" (a.1)
+            }
+        }
+        a href={(uri!(new_note(parent_id = Some(note.id))))} role="button" {
+          "Create Subnote"
+        }
+        a href={(uri!(edit_note(note.id)))} role="button" {
+          "Edit Note"
+        }
+        article style=r#"
+          padding: 1rem; border: 1px solid var(--muted-border);
+          border-radius: 0.5rem; margin: 0.5rem;
+        "# {
+          p { (note.description) }
+        }
+        p { (form(note.id, action))}
+        (rendered_children);
+        @for l in logs {
+            p style="color: var(--muted-color); font-size: 0.9em;" { (l) }
+        }
+      }
+    };
 
     let page = Page {
         title: html! { title { (note.title) } },
@@ -150,6 +185,16 @@ pub fn new_note_form(codes: Vec<String>, parent_id: Option<i64>) -> Markup {
         }
       }
     }
+}
+
+#[get("/notes/edit/<id>")]
+pub async fn edit_note(
+    _auth: Authenticated,
+    id: i64,
+    mut db: Connection<Db>,
+    flash: Option<FlashMessage<'_>>,
+) -> Result<Markup, Flash<Redirect>> {
+    Ok(html! { h1 {"Unimplemented"} })
 }
 
 #[get("/notes/new?<parent_id>")]
