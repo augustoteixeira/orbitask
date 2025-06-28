@@ -1,23 +1,20 @@
-use crate::db_manage::codes::get_all_code_names;
-use crate::Db;
 use maud::{html, Markup};
-use rocket::request::FlashMessage;
-use rocket::response::{Flash, Redirect};
-use rocket_db_pools::Connection;
 
-use crate::api::Authenticated;
-use crate::db_manage::codes::{Action, FormType};
-use crate::db_manage::{get_child_notes, get_note, get_root_notes, Note};
-use crate::frontend::style::{base_flash, render, Page};
+use crate::api::codes::{Action, FormType};
+use crate::api::notes::rocket_uri_macro_execute_action;
 
-pub fn form(note_id: i64, action: Action) -> Markup {
+pub fn form(note_id: i64, action: Action, prefix: String) -> Markup {
     let form = match action.form_type {
         FormType::UInt(field) => html! {
-        form method="post" action="/notes/execute/123" {
-          label for="int" { (field.title) }
-          input type="text" id=(field.label) name=(field.label) required;
-          button type="submit" class="contrast" { "Submit" }
-        }    },
+          form method="post" action=(uri!(execute_action(note_id))) {
+            input type="hidden" name="action_name" value="delay";
+
+            label for=(format!("fields[{}]",field.label)) { (field.title) }
+            input type="int" name=(format!("fields[{}]",field.label));
+
+            button type="submit" { "Execute" }
+          }
+        },
     };
     html! {
         b { (action.title) }

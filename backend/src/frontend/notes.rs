@@ -1,6 +1,5 @@
-use crate::db_manage::codes::{
-    get_all_code_names, Action, FormType, UIntField,
-};
+use crate::api::codes::{get_form_type, Action, FormType, UIntField};
+use crate::db_manage::codes::get_all_code_names;
 use crate::Db;
 use maud::{html, Markup};
 use rocket::request::FlashMessage;
@@ -93,11 +92,11 @@ pub async fn show_note(
     let logs: Vec<String> = Vec::new();
 
     let uint_description = UIntField {
-        label: "days".to_string(),
+        label: "my_int".to_string(),
         title: "Days until expiration".to_string(),
     };
 
-    let form_type: FormType = FormType::UInt(uint_description);
+    let form_type: FormType = get_form_type(234234, "bla".to_string());
     let action: Action = Action {
         label: "delay".to_string(),
         title: "Delay Task".to_string(),
@@ -132,7 +131,7 @@ pub async fn show_note(
         "# {
           p { (note.description) }
         }
-        p { (form(note.id, action))}
+        p { (form(note.id, action, "".to_string()))}
         (rendered_children);
         @for l in logs {
             p style="color: var(--muted-color); font-size: 0.9em;" { (l) }
@@ -187,7 +186,7 @@ pub fn new_note_form(codes: Vec<String>, parent_id: Option<i64>) -> Markup {
     }
 }
 
-#[get("/notes/edit/<id>")]
+#[get("/notes/<id>/edit")]
 pub async fn edit_note(
     _auth: Authenticated,
     id: i64,

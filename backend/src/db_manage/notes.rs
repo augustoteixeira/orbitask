@@ -1,4 +1,4 @@
-use crate::sqlx::{FromRow, Row};
+use crate::sqlx::FromRow;
 use rocket_db_pools::sqlx::{self};
 use rocket_db_pools::Connection;
 
@@ -21,7 +21,7 @@ pub async fn create_note(
     code_name: Option<String>,
 ) -> Result<i64, sqlx::Error> {
     println!("{parent_id:?}, {title:?}, {description:?}, {code_name:?}");
-    let row = sqlx::query(
+    sqlx::query(
         r#"
       INSERT INTO notes (parent_id, title, description, code_name)
       VALUES (?, ?, ?, ?)

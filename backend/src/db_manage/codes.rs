@@ -9,24 +9,6 @@ pub struct Code {
     pub code: String,
 }
 
-#[derive(Debug, FromRow)]
-pub struct UIntField {
-    pub label: String,
-    pub title: String,
-}
-
-#[derive(Debug)]
-pub enum FormType {
-    UInt(UIntField),
-}
-
-#[derive(Debug)]
-pub struct Action {
-    pub label: String,
-    pub title: String,
-    pub form_type: FormType,
-}
-
 pub async fn create_code(
     db: &mut Connection<Db>,
     name: String,

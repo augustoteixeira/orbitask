@@ -2,9 +2,13 @@ use rocket::form::Form;
 use rocket::post;
 use rocket::response::{Flash, Redirect};
 use rocket_db_pools::Connection;
+use std::collections::HashMap;
 
+use crate::api::codes::{parse_fields, NewCodeForm};
 use crate::api::Authenticated;
 use crate::db_manage::{create_note, Db};
+
+use super::codes::get_form_type;
 
 #[derive(FromForm)]
 pub struct CreateNoteForm {
@@ -53,4 +57,28 @@ pub async fn create_note_submit(
             format!("Failed to create note: {e}."),
         )),
     }
+}
+
+#[derive(FromForm, Debug)]
+pub struct ExecuteForm {
+    pub action_name: String,
+    //#[field(name = uncaptured)] // collect all other fields
+    #[field(name = "fields")]
+    pub fields: HashMap<String, String>,
+}
+
+#[post("/notes/<id>/execute", data = "<form>")]
+pub async fn execute_action(
+    _auth: Authenticated,
+    mut db: Connection<Db>,
+    id: i64,
+    form: Form<ExecuteForm>,
+) -> Result<Flash<Redirect>, Flash<Redirect>> {
+    println!("{form:?}");
+    let form_type = get_form_type(id, form.action_name.clone());
+    let value = parse_fields(&form_type, &form.fields, "".to_string());
+    Err(Flash::error(
+        Redirect::to("/"),
+        format!("execute not yet implemented: {value:?}"),
+    ))
 }

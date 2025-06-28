@@ -47,6 +47,7 @@ async fn main() -> Result<(), Error> {
         .mount("/", routes![api::login_submit])
         .mount("/", routes![api::logout_submit])
         .mount("/", routes![api::create_note_submit])
+        .mount("/", routes![api::notes::execute_action])
         .mount("/", routes![frontend::login::login])
         .mount("/", routes![frontend::notes::show_note])
         .mount("/", routes![frontend::notes::new_note])
