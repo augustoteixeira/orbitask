@@ -4,11 +4,9 @@ use rocket::response::{Flash, Redirect};
 use rocket_db_pools::Connection;
 use std::collections::HashMap;
 
-use crate::api::codes::{parse_fields, NewCodeForm};
 use crate::api::Authenticated;
+use crate::db_manage::codes::{get_forms, parse_fields};
 use crate::db_manage::{create_note, Db};
-
-use super::codes::get_forms;
 
 #[derive(FromForm)]
 pub struct CreateNoteForm {
@@ -75,7 +73,7 @@ pub async fn execute_action(
     form: Form<ExecuteForm>,
 ) -> Result<Flash<Redirect>, Flash<Redirect>> {
     println!("{form:?}");
-    let forms = get_forms(id);
+    let forms = get_forms(&mut db, id).await;
     let action = forms.get(&form.action_label).ok_or(Flash::error(
         Redirect::to("/"),
         format!("action not found: {}", form.action_label),

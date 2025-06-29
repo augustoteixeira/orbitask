@@ -1,5 +1,5 @@
-use crate::api::codes::{get_forms, Action, FormType};
 use crate::db_manage::codes::get_all_code_names;
+use crate::db_manage::codes::get_forms;
 use crate::Db;
 use maud::{html, Markup};
 use rocket::request::FlashMessage;
@@ -91,7 +91,7 @@ pub async fn show_note(
 
     let logs: Vec<String> = Vec::new();
 
-    let forms = get_forms(note.id);
+    let forms = get_forms(&mut db, note.id).await;
 
     let contents = html! {
       main class="container" {

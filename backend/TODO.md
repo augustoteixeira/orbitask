@@ -13,7 +13,6 @@ Features
   - [ ] breadcrumbs for ancestors
 - Coding
   - [ ] * add trait for codes
-  - [ ] * implement basic form which is an enum of primitive types
   - [ ] * implement `None` code with `done` form
 
 Improvements

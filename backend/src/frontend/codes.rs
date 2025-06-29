@@ -25,6 +25,16 @@ pub fn render_form(note_id: i64, action: &Action, prefix: String) -> Markup {
             button type="submit" { "Execute" }
           }
         },
+        FormType::Date => html! {
+          form method="post" action=(uri!(execute_action(note_id))) {
+            input type="hidden" name="action_label" value=(prefix);
+
+            label for=(format!("fields[{}]",action.label)) { (action.title) }
+            input type="date" name=(format!("fields[{}]",action.label));
+
+            button type="submit" { "Execute" }
+          }
+        },
     };
     html! {
         b { (action.title) }
