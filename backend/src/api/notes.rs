@@ -8,7 +8,7 @@ use crate::api::codes::{parse_fields, NewCodeForm};
 use crate::api::Authenticated;
 use crate::db_manage::{create_note, Db};
 
-use super::codes::get_form_type;
+use super::codes::get_forms;
 
 #[derive(FromForm)]
 pub struct CreateNoteForm {
@@ -61,7 +61,7 @@ pub async fn create_note_submit(
 
 #[derive(FromForm, Debug)]
 pub struct ExecuteForm {
-    pub action_name: String,
+    pub action_label: String,
     //#[field(name = uncaptured)] // collect all other fields
     #[field(name = "fields")]
     pub fields: HashMap<String, String>,
@@ -75,8 +75,24 @@ pub async fn execute_action(
     form: Form<ExecuteForm>,
 ) -> Result<Flash<Redirect>, Flash<Redirect>> {
     println!("{form:?}");
-    let form_type = get_form_type(id, form.action_name.clone());
-    let value = parse_fields(&form_type, &form.fields, "".to_string());
+    let forms = get_forms(id);
+    let action = forms.get(&form.action_label).ok_or(Flash::error(
+        Redirect::to("/"),
+        format!("action not found: {}", form.action_label),
+    ))?;
+    let value =
+        parse_fields(&action.form_type, &form.fields, &action.label)
+            .map_err(|e| {
+                Flash::error(
+                    Redirect::to("/"),
+                    format!(
+                        "parsing failed: form_type {:?}, form.fields {:?}, prefix {:?}\n{e}",
+                &action.form_type,
+                &form.fields,
+                "".to_string()
+            ),
+                )
+            })?;
     Err(Flash::error(
         Redirect::to("/"),
         format!("execute not yet implemented: {value:?}"),

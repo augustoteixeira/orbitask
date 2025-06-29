@@ -32,15 +32,19 @@ pub async fn create_code_submit(
     }
 }
 
-#[derive(Debug, FromRow)]
-pub struct UIntField {
-    pub label: String,
-    pub title: String,
-}
+// struct StructType {
+//     fields: Vec<Action>
+// }
+
+// struct EnumType {
+//     variants: Vec<Action>
+// }
 
 #[derive(Debug)]
 pub enum FormType {
-    UInt(UIntField),
+    UInt,
+    // Struct(StuctType)
+    // Enum(EnumType)
 }
 
 #[derive(Debug)]
@@ -58,15 +62,13 @@ pub enum Value {
 pub fn parse_fields(
     form_type: &FormType,
     inputs: &HashMap<String, String>,
-    prefix: String,
+    prefix: &String,
 ) -> Result<Value, String> {
     match form_type {
-        FormType::UInt(field) => {
-            let mut key = prefix.clone();
-            key.push_str(&field.label.clone());
+        FormType::UInt => {
             let value = inputs
-                .get(key.as_str())
-                .ok_or(format!("Missing field: {}", key))?;
+                .get(prefix)
+                .ok_or(format!("Missing field: {:?}", prefix))?;
             value
                 .parse::<u64>()
                 .map(Value::UInt)
@@ -75,15 +77,22 @@ pub fn parse_fields(
     }
 }
 
-pub fn get_form_type(id: i64, action_name: String) -> FormType {
-    FormType::UInt(UIntField {
-        label: "my_int".to_string(),
-        title: "This is a placeholder title".to_string(),
-    })
-}
+// pub fn get_form_type(id: i64, action_name: String) -> FormType {
+//     FormType::UInt(UIntField {
+//         label: "my_int".to_string(),
+//         title: "This is a placeholder title".to_string(),
+//     })
+// }
 
-pub fn get_forms(id: i64) -> Vec<FormType> {
-    let mut result = Vec::new();
-    result.push(get_form_type(id, "placeholder".to_string()));
+pub fn get_forms(id: i64) -> HashMap<String, Action> {
+    let mut result: HashMap<String, Action> = HashMap::new();
+    result.insert(
+        "delay".to_string(),
+        Action {
+            label: "delay".to_string(),
+            title: "Delay (days)".to_string(),
+            form_type: FormType::UInt,
+        },
+    );
     result
 }

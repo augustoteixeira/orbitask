@@ -1,4 +1,4 @@
-use crate::api::codes::{get_form_type, Action, FormType, UIntField};
+use crate::api::codes::{get_forms, Action, FormType};
 use crate::db_manage::codes::get_all_code_names;
 use crate::Db;
 use maud::{html, Markup};
@@ -8,7 +8,7 @@ use rocket_db_pools::Connection;
 
 use crate::api::Authenticated;
 use crate::db_manage::{get_child_notes, get_note, get_root_notes, Note};
-use crate::frontend::codes::form;
+use crate::frontend::codes::render_forms;
 use crate::frontend::style::{base_flash, render, Page};
 
 pub fn notes_grid(notes: Vec<Note>) -> Markup {
@@ -91,17 +91,7 @@ pub async fn show_note(
 
     let logs: Vec<String> = Vec::new();
 
-    let uint_description = UIntField {
-        label: "my_int".to_string(),
-        title: "Days until expiration".to_string(),
-    };
-
-    let form_type: FormType = get_form_type(234234, "bla".to_string());
-    let action: Action = Action {
-        label: "delay".to_string(),
-        title: "Delay Task".to_string(),
-        form_type,
-    };
+    let forms = get_forms(note.id);
 
     let contents = html! {
       main class="container" {
@@ -131,7 +121,7 @@ pub async fn show_note(
         "# {
           p { (note.description) }
         }
-        p { (form(note.id, action, "".to_string()))}
+        p { (render_forms(note.id, forms))}
         (rendered_children);
         @for l in logs {
             p style="color: var(--muted-color); font-size: 0.9em;" { (l) }
