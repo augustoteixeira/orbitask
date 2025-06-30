@@ -5,8 +5,9 @@ use rocket_db_pools::Connection;
 use std::collections::HashMap;
 
 use crate::api::Authenticated;
-use crate::db_manage::codes::{get_forms, parse_fields};
+use crate::db_manage::codes::{execute, get_forms, parse_fields};
 use crate::db_manage::{create_note, Db};
+use crate::frontend::notes::rocket_uri_macro_show_note;
 
 #[derive(FromForm)]
 pub struct CreateNoteForm {
@@ -91,8 +92,14 @@ pub async fn execute_action(
             ),
                 )
             })?;
-    Err(Flash::error(
-        Redirect::to("/"),
-        format!("execute not yet implemented: {value:?}"),
+    let message = execute(&mut db, id, &action, &value).await.map_err(|e| {
+        Flash::error(
+            Redirect::to("/"),
+            format!("executing failed: id {id:?}, action {action:?}, value {:?}\n{e}", &value),
+        )
+    })?;
+    Ok(Flash::success(
+        Redirect::to(uri!(show_note(id))),
+        format!("Code correctly executed: {message}"),
     ))
 }

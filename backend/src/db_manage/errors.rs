@@ -7,4 +7,6 @@ pub enum DbError {
     SqlxError { source: sqlx::Error },
     #[snafu(display("Note not found {id}"))]
     NoNoteError { id: i64 },
+    #[snafu(display("Execution error: {trace}"))]
+    ExecutionError { trace: String },
 }

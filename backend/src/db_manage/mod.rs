@@ -8,7 +8,7 @@ pub use login::{get_password, set_password};
 pub mod notes;
 pub use notes::{create_note, get_child_notes, get_note, get_root_notes, Note};
 pub mod attributes;
-pub use attributes::create_attribute;
+pub use attributes::set_attribute;
 pub mod codes;
 pub use codes::create_code;
 pub mod logs;

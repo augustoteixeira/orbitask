@@ -1,13 +1,20 @@
 use chrono::NaiveDate;
+use snafu::ResultExt;
 use std::collections::HashMap;
 
 use crate::{
     api::codes::{Action, FormType, Value},
+    db_manage::attributes::{get_attribute, set_attribute},
     sqlx::{FromRow, Row},
 };
 use rocket_db_pools::Connection;
 
 use crate::Db;
+
+use super::{
+    errors::{DbError, SqlxSnafu},
+    get_child_notes,
+};
 
 #[derive(Debug, FromRow)]
 pub struct Code {
@@ -118,6 +125,14 @@ pub async fn get_forms(
         }
         None => {
             let mut result: HashMap<String, Action> = HashMap::new();
+            let children = get_child_notes(db, id).await.unwrap();
+            if !children.is_empty() {
+                return result;
+            }
+            let done_status = get_attribute(db, id, "done").await.unwrap();
+            if let Some(_) = done_status {
+                return result;
+            }
             result.insert(
                 "done".to_string(),
                 Action {
@@ -129,4 +144,29 @@ pub async fn get_forms(
             result
         }
     }
+}
+
+pub async fn execute(
+    db: &mut Connection<Db>,
+    id: i64,
+    action: &Action,
+    value: &Value,
+) -> Result<String, DbError> {
+    let children = get_child_notes(db, id).await.context(SqlxSnafu)?;
+    if !children.is_empty() {
+        return Err(DbError::ExecutionError {
+            trace: "Cannot mark note as done if it has children".to_string(),
+        });
+    }
+    match value {
+        Value::Date(date) => {
+            set_attribute(db, id, "done", date.to_string().as_str()).await?
+        }
+        _ => {
+            return Err(DbError::ExecutionError {
+                trace: format!("{value:?}"),
+            });
+        }
+    }
+    Ok("Note marked as done".to_string())
 }

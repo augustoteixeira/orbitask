@@ -1,3 +1,4 @@
+use crate::db_manage::attributes::get_attributes;
 use crate::db_manage::codes::get_all_code_names;
 use crate::db_manage::codes::get_forms;
 use crate::Db;
@@ -87,7 +88,8 @@ pub async fn show_note(
 
     let rendered_children = notes_grid(child_notes);
 
-    let attributes: Vec<(String, String)> = Vec::new();
+    let attributes: Vec<(String, String)> =
+        get_attributes(&mut db, id).await.unwrap();
 
     let logs: Vec<String> = Vec::new();
 

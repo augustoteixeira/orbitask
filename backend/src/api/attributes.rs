@@ -26,7 +26,7 @@ pub async fn create_attribute_submit(
         value,
     } = form.into_inner();
 
-    match db_manage::create_attribute(&mut db, note_id, key, value).await {
+    match db_manage::set_attribute(&mut db, note_id, &key, &value).await {
         Ok(_) => Ok(Flash::success(
             Redirect::to(format!("/notes/{}", note_id)),
             "Attribute created.",

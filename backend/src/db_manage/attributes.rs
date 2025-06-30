@@ -1,7 +1,10 @@
 use crate::sqlx::{FromRow, Row};
 use rocket_db_pools::Connection;
+use snafu::ResultExt;
 
 use crate::Db;
+
+use super::errors::{DbError, SqlxSnafu};
 
 #[derive(Debug, FromRow)]
 pub struct Attribute {
@@ -10,24 +13,57 @@ pub struct Attribute {
     pub value: String,
 }
 
-pub async fn create_attribute(
+pub async fn set_attribute(
     db: &mut Connection<Db>,
     note_id: i64,
-    key: String,
-    value: String,
-) -> Result<i64, sqlx::Error> {
-    let row = sqlx::query(
+    key: &str,
+    value: &str,
+) -> Result<(), DbError> {
+    sqlx::query(
         r#"
-    INSERT INTO attributes (note_id, key, value)
-    VALUES (?, ?, ?)
-    "#,
+        INSERT INTO attributes (note_id, key, value)
+        VALUES (?, ?, ?)
+        ON CONFLICT(note_id, key) DO UPDATE SET value = excluded.value
+        "#,
     )
     .bind(note_id)
     .bind(key)
     .bind(value)
-    .fetch_one(&mut ***db)
-    .await?;
+    .execute(&mut ***db)
+    .await
+    .context(SqlxSnafu)?;
 
-    let new_attribute_id: i64 = row.get("id");
-    Ok(new_attribute_id)
+    Ok(())
+}
+
+pub async fn get_attribute(
+    db: &mut Connection<Db>,
+    note_id: i64,
+    key: &str,
+) -> Result<Option<String>, DbError> {
+    let result = sqlx::query_scalar::<_, String>(
+        "SELECT value FROM attributes WHERE note_id = ? AND key = ?",
+    )
+    .bind(note_id)
+    .bind(key)
+    .fetch_optional(&mut ***db)
+    .await
+    .context(SqlxSnafu)?;
+
+    Ok(result)
+}
+
+pub async fn get_attributes(
+    db: &mut Connection<Db>,
+    note_id: i64,
+) -> Result<Vec<(String, String)>, DbError> {
+    let result = sqlx::query_as::<_, (String, String)>(
+        "SELECT key, value FROM attributes WHERE note_id = ?",
+    )
+    .bind(note_id)
+    .fetch_all(&mut ***db)
+    .await
+    .context(SqlxSnafu)?;
+
+    Ok(result)
 }
