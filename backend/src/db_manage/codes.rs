@@ -45,7 +45,7 @@ pub async fn create_code(
 pub async fn get_code(
     db: &mut Connection<Db>,
     note_id: i64,
-) -> Result<Option<Code>, sqlx::Error> {
+) -> Result<Option<Code>, DbError> {
     let code = sqlx::query_as::<_, Code>(
         r#"
         SELECT codes.name, codes.script
@@ -56,7 +56,8 @@ pub async fn get_code(
     )
     .bind(note_id)
     .fetch_optional(&mut ***db)
-    .await?;
+    .await
+    .context(SqlxSnafu)?;
 
     Ok(code)
 }
@@ -152,6 +153,28 @@ pub async fn execute(
     action: &Action,
     value: &Value,
 ) -> Result<String, DbError> {
+    let option_code = get_code(db, id).await?;
+    match option_code {
+        None => execute_done(db, id, action, value).await,
+        Some(_code) => unimplemented!(),
+    }
+}
+
+pub async fn execute_done(
+    db: &mut Connection<Db>,
+    id: i64,
+    action: &Action,
+    value: &Value,
+) -> Result<String, DbError> {
+    if action.label != "done" {
+        return Err(DbError::ExecutionError {
+            trace: format!(
+                "A note without code can only handle <done>, not <{}>",
+                action.label
+            )
+            .to_string(),
+        });
+    }
     let children = get_child_notes(db, id).await.context(SqlxSnafu)?;
     if !children.is_empty() {
         return Err(DbError::ExecutionError {

@@ -178,12 +178,12 @@ pub fn new_note_form(codes: Vec<String>, parent_id: Option<i64>) -> Markup {
     }
 }
 
-#[get("/notes/<id>/edit")]
+#[get("/notes/<_id>/edit")]
 pub async fn edit_note(
     _auth: Authenticated,
-    id: i64,
-    mut db: Connection<Db>,
-    flash: Option<FlashMessage<'_>>,
+    _id: i64,
+    mut _db: Connection<Db>,
+    _flash: Option<FlashMessage<'_>>,
 ) -> Result<Markup, Flash<Redirect>> {
     Ok(html! { h1 {"Unimplemented"} })
 }

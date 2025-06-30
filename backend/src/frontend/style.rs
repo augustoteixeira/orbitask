@@ -47,10 +47,10 @@ pub fn base_flash(flash: Option<FlashMessage<'_>>) -> Markup {
             @let base = r#"margin: 1rem 0; padding: 0.75rem;
                            border-radius: 0.5rem; font-weight: bold;"#;
             @match msg.kind() {
-              "success" => "(base) background-color: #d1e7dd; color: #0f5132;",
-              "error" => "(base) background-color: #f8d7da; color: #842029;",
-              _ => r#"(base) background-color: var(--muted-bg);
-                      color: var(--contrast);"#,
+              "success" => (format!("{base} background-color: #d1e7dd; color: #0f5132;")),
+              "error" => (format!("{base} background-color: #f8d7da; color: #842029;")),
+              _ => (format!(r#"{base} background-color: var(--muted-bg);
+                      color: var(--contrast);"#)),
             }
           } {
             (msg.message())
