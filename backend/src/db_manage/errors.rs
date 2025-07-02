@@ -9,4 +9,6 @@ pub enum DbError {
     NoNoteError { id: i64 },
     #[snafu(display("Execution error: {trace}"))]
     ExecutionError { trace: String },
+    #[snafu(display("Lua error {source:?}"))]
+    LuaError { source: mlua::Error },
 }

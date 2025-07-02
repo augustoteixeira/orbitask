@@ -74,11 +74,11 @@ pub async fn show_note(
     let note = match get_note(&mut db, id).await {
         Ok(Some(note)) => note,
         Ok(None) => {
-            return Err(Flash::error(Redirect::to("/notes"), "Note not found."))
+            return Err(Flash::error(Redirect::to("/"), "Note not found."))
         }
         Err(e) => {
             return Err(Flash::error(
-                Redirect::to("/notes"),
+                Redirect::to("/"),
                 format!("Failed to load note: {e}"),
             ))
         }
@@ -94,10 +94,7 @@ pub async fn show_note(
     let logs: Vec<String> = Vec::new();
 
     let forms = get_forms(&mut db, note.id).await.map_err(|e| {
-        Flash::error(
-            Redirect::to("/notes"),
-            format!("Failed to load forms: {e}"),
-        )
+        Flash::error(Redirect::to("/"), format!("Failed to load forms: {e}"))
     })?;
 
     let contents = html! {

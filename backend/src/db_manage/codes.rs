@@ -7,13 +7,17 @@ use crate::{
     db_manage::attributes::{get_attribute, set_attribute},
     sqlx::{FromRow, Row},
 };
+use mlua::{
+    FromLua, Function, Lua, MetaMethod, Result as LuaResult, UserData,
+    UserDataMethods, Value as LuaValue, Variadic,
+};
 use rocket_db_pools::Connection;
 use serde_json;
 
 use crate::Db;
 
 use super::{
-    errors::{DbError, SqlxSnafu},
+    errors::{DbError, LuaSnafu, SqlxSnafu},
     get_child_notes,
 };
 
@@ -123,11 +127,15 @@ pub async fn get_forms(
                     form_type: FormType::UInt,
                 },
             );
-            let json_value = r#"
-              { "crazy": { "label": "crazy", "title": "Crazy code!!!",
-                           "form_type": "UInt" } }
+            let lua = Lua::new();
+            let lua_forms_function = r#"
+              return '{ "crazy": { "label": "crazy", "title": "Crazy code!!!", "form_type": "UInt" } }'
             "#;
-            Ok(serde_json::from_str(json_value).unwrap()) // TODO remove this unrwrap
+            let lua_forms_string = lua
+                .load(lua_forms_function)
+                .eval::<String>()
+                .context(LuaSnafu)?;
+            Ok(serde_json::from_str(lua_forms_string.as_str()).unwrap()) // TODO remove this unrwrap
         }
         None => {
             let mut result: HashMap<String, Action> = HashMap::new();
