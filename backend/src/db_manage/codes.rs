@@ -110,8 +110,8 @@ pub fn parse_fields(
 pub async fn get_forms(
     db: &mut Connection<Db>,
     id: i64,
-) -> HashMap<String, Action> {
-    let code = get_code(db, id).await.unwrap();
+) -> Result<HashMap<String, Action>, DbError> {
+    let code = get_code(db, id).await?;
     match code {
         Some(_) => {
             let mut result: HashMap<String, Action> = HashMap::new();
@@ -127,17 +127,17 @@ pub async fn get_forms(
               { "crazy": { "label": "crazy", "title": "Crazy code!!!"
                              "form_type": { "UInt": { } } } }
             "#;
-            serde_json::from_str(json_value).unwrap()
+            Ok(serde_json::from_str(json_value).unwrap()) // TODO remove this unrwrap
         }
         None => {
             let mut result: HashMap<String, Action> = HashMap::new();
-            let children = get_child_notes(db, id).await.unwrap();
+            let children = get_child_notes(db, id).await.context(SqlxSnafu)?;
             if !children.is_empty() {
-                return result;
+                return Ok(result);
             }
-            let done_status = get_attribute(db, id, "done").await.unwrap();
+            let done_status = get_attribute(db, id, "done").await?;
             if let Some(_) = done_status {
-                return result;
+                return Ok(result);
             }
             result.insert(
                 "done".to_string(),
@@ -147,7 +147,7 @@ pub async fn get_forms(
                     form_type: FormType::Date,
                 },
             );
-            result
+            Ok(result)
         }
     }
 }

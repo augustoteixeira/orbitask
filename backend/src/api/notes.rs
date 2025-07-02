@@ -74,7 +74,12 @@ pub async fn execute_action(
     form: Form<ExecuteForm>,
 ) -> Result<Flash<Redirect>, Flash<Redirect>> {
     println!("{form:?}");
-    let forms = get_forms(&mut db, id).await;
+    let forms = get_forms(&mut db, id).await.map_err(|e| {
+        Flash::error(
+            Redirect::to("/"),
+            format!("could not get forms: note {:?} {e}", &id),
+        )
+    })?;
     let action = forms.get(&form.action_label).ok_or(Flash::error(
         Redirect::to(uri!(show_note(id))),
         format!("action not found: {}", form.action_label),
