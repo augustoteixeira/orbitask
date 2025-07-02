@@ -170,6 +170,8 @@ dependencies = [
  "rocket",
  "rocket_db_pools",
  "rpassword",
+ "serde",
+ "serde_json",
  "snafu",
  "sqlx",
 ]

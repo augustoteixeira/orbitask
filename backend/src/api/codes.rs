@@ -7,6 +7,7 @@ use rocket_db_pools::Connection;
 use crate::api::Authenticated;
 use crate::db_manage::{self};
 use crate::Db;
+use serde::{Deserialize, Serialize};
 
 #[derive(FromForm)]
 pub struct NewCodeForm {
@@ -39,7 +40,7 @@ pub async fn create_code_submit(
 //     variants: Vec<Action>
 // }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum FormType {
     UInt,
     Date,
@@ -47,7 +48,7 @@ pub enum FormType {
     // Enum(EnumType)
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Action {
     pub label: String,
     pub title: String,

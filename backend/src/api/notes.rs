@@ -1,4 +1,3 @@
-use maud::html;
 use rocket::form::Form;
 use rocket::post;
 use rocket::response::{Flash, Redirect};
@@ -77,7 +76,7 @@ pub async fn execute_action(
     println!("{form:?}");
     let forms = get_forms(&mut db, id).await;
     let action = forms.get(&form.action_label).ok_or(Flash::error(
-        Redirect::to("/"),
+        Redirect::to(uri!(show_note(id))),
         format!("action not found: {}", form.action_label),
     ))?;
     let value =
@@ -85,7 +84,7 @@ pub async fn execute_action(
             .map_err(|e| {
                 Flash::error(
                     Redirect::to("/"), format!(
-                      "parsing failed: form_type {:?}, form.fields {:?}, prefix {:?}(e)",
+                        "parsing failed: form_type {:?}, form.fields {:?}, prefix {:?}{e}",
                       &action.form_type,
                       &form.fields,
                       "".to_string()

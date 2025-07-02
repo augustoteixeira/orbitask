@@ -8,6 +8,7 @@ use crate::{
     sqlx::{FromRow, Row},
 };
 use rocket_db_pools::Connection;
+use serde_json;
 
 use crate::Db;
 
@@ -122,7 +123,11 @@ pub async fn get_forms(
                     form_type: FormType::UInt,
                 },
             );
-            result
+            let json_value = r#"
+              { "crazy": { "label": "crazy", "title": "Crazy code!!!"
+                             "form_type": { "UInt": { } } } }
+            "#;
+            serde_json::from_str(json_value).unwrap()
         }
         None => {
             let mut result: HashMap<String, Action> = HashMap::new();
