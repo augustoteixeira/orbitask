@@ -128,13 +128,17 @@ pub async fn get_forms(
                 },
             );
             let lua = Lua::new();
+            let globals = lua.globals();
             let lua_forms_function = r#"
-              return '{ "crazy": { "label": "crazy", "title": "Crazy code!!!", "form_type": "UInt" } }'
+              forms = '{ "crazy": { "label": "crazy", "title": "Crazy code!!!", "form_type": "UInt" } }'
             "#;
-            let lua_forms_string = lua
-                .load(lua_forms_function)
-                .eval::<String>()
-                .context(LuaSnafu)?;
+            lua.load(lua_forms_function).exec().context(LuaSnafu {
+                task: "loading code",
+            })?;
+            let lua_forms_string =
+                globals.get::<String>("forms").context(LuaSnafu {
+                    task: "getting forms",
+                })?;
             Ok(serde_json::from_str(lua_forms_string.as_str()).unwrap()) // TODO remove this unrwrap
         }
         None => {
