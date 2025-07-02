@@ -124,8 +124,8 @@ pub async fn get_forms(
                 },
             );
             let json_value = r#"
-              { "crazy": { "label": "crazy", "title": "Crazy code!!!"
-                             "form_type": { "UInt": { } } } }
+              { "crazy": { "label": "crazy", "title": "Crazy code!!!",
+                           "form_type": "UInt" } }
             "#;
             Ok(serde_json::from_str(json_value).unwrap()) // TODO remove this unrwrap
         }
@@ -147,6 +147,7 @@ pub async fn get_forms(
                     form_type: FormType::Date,
                 },
             );
+            println!("{:?}", serde_json::to_string(&result));
             Ok(result)
         }
     }
