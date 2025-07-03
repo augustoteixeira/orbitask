@@ -31,7 +31,9 @@ pub async fn set_attribute(
     .bind(value)
     .execute(&mut ***db)
     .await
-    .context(SqlxSnafu)?;
+    .context(SqlxSnafu {
+        task: "setting attributes",
+    })?;
 
     Ok(())
 }
@@ -48,7 +50,9 @@ pub async fn get_attribute(
     .bind(key)
     .fetch_optional(&mut ***db)
     .await
-    .context(SqlxSnafu)?;
+    .context(SqlxSnafu {
+        task: "getting attributes",
+    })?;
 
     Ok(result)
 }
@@ -63,7 +67,9 @@ pub async fn get_attributes(
     .bind(note_id)
     .fetch_all(&mut ***db)
     .await
-    .context(SqlxSnafu)?;
+    .context(SqlxSnafu {
+        task: "getting attributes",
+    })?;
 
     Ok(result)
 }

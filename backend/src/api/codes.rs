@@ -12,7 +12,8 @@ use serde::{Deserialize, Serialize};
 #[derive(FromForm)]
 pub struct NewCodeForm {
     pub name: String,
-    pub code: String,
+    pub capabilities: String,
+    pub script: String,
 }
 
 #[post("/codes", data = "<form>")]
@@ -21,9 +22,13 @@ pub async fn create_code_submit(
     mut db: Connection<Db>,
     form: Form<NewCodeForm>,
 ) -> Result<Flash<Redirect>, Flash<Redirect>> {
-    let NewCodeForm { name, code } = form.into_inner();
+    let NewCodeForm {
+        name,
+        capabilities,
+        script,
+    } = form.into_inner();
 
-    match db_manage::create_code(&mut db, name, code).await {
+    match db_manage::create_code(&mut db, name, capabilities, script).await {
         Ok(_) => Ok(Flash::success(Redirect::to("/codes"), "Code created.")),
         Err(_) => Err(Flash::error(
             Redirect::to("/codes"), // TODO use uri! macro

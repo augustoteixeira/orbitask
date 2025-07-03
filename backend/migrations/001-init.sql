@@ -1,6 +1,7 @@
 -- Scripts to be executed by notes
 CREATE TABLE codes (
   name TEXT PRIMARY KEY,      -- e.g. "weekly_check", "project_bootstrap"
+  capabilities TEXT NOT NULL, -- What Lua code is allowed to access
   script TEXT NOT NULL        -- Lua code as text
 );
 

@@ -1,4 +1,5 @@
 use chrono::NaiveDate;
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use snafu::ResultExt;
 use std::collections::HashMap;
 
@@ -8,8 +9,7 @@ use crate::{
     sqlx::{FromRow, Row},
 };
 use mlua::{
-    FromLua, Function, Lua, MetaMethod, Result as LuaResult, UserData,
-    UserDataMethods, Value as LuaValue, Variadic,
+    Function, Lua, LuaSerdeExt, Table, Thread, ThreadStatus, Value as LuaValue,
 };
 use rocket_db_pools::Connection;
 use serde_json;
@@ -17,29 +17,32 @@ use serde_json;
 use crate::Db;
 
 use super::{
-    errors::{DbError, LuaSnafu, SqlxSnafu},
+    errors::{DbError, LuaSnafu, ParseSnafu, SqlxSnafu},
     get_child_notes,
 };
 
 #[derive(Debug, FromRow)]
 pub struct Code {
     pub name: String,
+    pub capabilities: String,
     pub script: String,
 }
 
 pub async fn create_code(
     db: &mut Connection<Db>,
     name: String,
-    code: String,
+    capabilities: String,
+    script: String,
 ) -> Result<i64, sqlx::Error> {
     let row = sqlx::query(
         r#"
-    INSERT INTO codes (name, code)
-    VALUES (?, ?)
+    INSERT INTO codes (name, capabilities, code)
+    VALUES (?, ?, ?)
     "#,
     )
     .bind(name)
-    .bind(code)
+    .bind(capabilities)
+    .bind(script)
     .fetch_one(&mut ***db)
     .await?;
 
@@ -53,7 +56,7 @@ pub async fn get_code(
 ) -> Result<Option<Code>, DbError> {
     let code = sqlx::query_as::<_, Code>(
         r#"
-        SELECT codes.name, codes.script
+        SELECT codes.name, codes.capabilities, codes.script
         FROM notes
         JOIN codes ON codes.name = notes.code_name
         WHERE notes.id = ?
@@ -62,7 +65,9 @@ pub async fn get_code(
     .bind(note_id)
     .fetch_optional(&mut ***db)
     .await
-    .context(SqlxSnafu)?;
+    .context(SqlxSnafu {
+        task: "querying code",
+    })?;
 
     Ok(code)
 }
@@ -104,46 +109,79 @@ pub fn parse_fields(
     }
 }
 
-// pub fn get_form_type(id: i64, action_name: String) -> FormType {
-//     FormType::UInt(UIntField {
-//         label: "my_int".to_string(),
-//         title: "This is a placeholder title".to_string(),
-//     })
-// }
+#[derive(Serialize, Deserialize)]
+enum Command<T> {
+    Result(T),
+}
+
+pub async fn run<R>(
+    db: &mut Connection<Db>,
+    code: Code,
+    command_name: &str,
+    id: i64,
+    arguments: String,
+) -> Result<R, DbError>
+where
+    R: DeserializeOwned,
+{
+    let lua = Lua::new();
+    let capabilities: Vec<String> =
+        serde_json::from_str(code.capabilities.as_str()).map_err(|e| {
+            DbError::ParseError {
+                when: format!("loading capabilities: {e}"),
+            }
+        })?;
+    //println!("{}", code.script);
+    lua.load(code.script).exec().context(LuaSnafu {
+        task: "loading code",
+    })?;
+    let globals = lua.globals();
+    let thread: Thread = globals.get("forms").context(LuaSnafu {
+        task: "getting forms",
+    })?;
+    while let ThreadStatus::Resumable | ThreadStatus::Running = thread.status()
+    {
+        let lua_command: mlua::Value = thread.resume(()).context(LuaSnafu {
+            task: "calling forms",
+        })?;
+        let command: Command<R> =
+            lua.from_value(lua_command)
+                .map_err(|e| DbError::ParseError {
+                    when: format!("deserializing command: {e}"),
+                })?;
+        match command {
+            Command::Result(s) => return Ok(s),
+            //    if capabilities.iter().any(|c| c == "println") {    }
+        }
+    }
+    Err(DbError::ExecutionError {
+        trace: "script did not return".to_string(),
+    })
+}
 
 pub async fn get_forms(
     db: &mut Connection<Db>,
     id: i64,
 ) -> Result<HashMap<String, Action>, DbError> {
-    let code = get_code(db, id).await?;
-    match code {
-        Some(_) => {
-            let mut result: HashMap<String, Action> = HashMap::new();
-            result.insert(
-                "crazy".to_string(),
-                Action {
-                    label: "crazy".to_string(),
-                    title: "Crazy code!!!".to_string(),
-                    form_type: FormType::UInt,
-                },
-            );
-            let lua = Lua::new();
-            let globals = lua.globals();
-            let lua_forms_function = r#"
-              forms = '{ "crazy": { "label": "crazy", "title": "Crazy code!!!", "form_type": "UInt" } }'
-            "#;
-            lua.load(lua_forms_function).exec().context(LuaSnafu {
-                task: "loading code",
-            })?;
-            let lua_forms_string =
-                globals.get::<String>("forms").context(LuaSnafu {
-                    task: "getting forms",
-                })?;
-            Ok(serde_json::from_str(lua_forms_string.as_str()).unwrap()) // TODO remove this unrwrap
+    let optional_code = get_code(db, id).await?;
+    match optional_code {
+        Some(code) => {
+            let forms = run::<HashMap<String, Action>>(
+                db,
+                code,
+                "forms",
+                id,
+                "".to_string(),
+            )
+            .await?;
+            Ok(forms)
         }
         None => {
             let mut result: HashMap<String, Action> = HashMap::new();
-            let children = get_child_notes(db, id).await.context(SqlxSnafu)?;
+            let children =
+                get_child_notes(db, id).await.context(SqlxSnafu {
+                    task: "getting children",
+                })?;
             if !children.is_empty() {
                 return Ok(result);
             }
@@ -174,7 +212,11 @@ pub async fn execute(
     let option_code = get_code(db, id).await?;
     match option_code {
         None => execute_done(db, id, action, value).await,
-        Some(_code) => unimplemented!(),
+        Some(code) => {
+            unimplemented!()
+            //???
+            //let message = run::<String>(db, code, id).await?;
+        }
     }
 }
 
@@ -193,7 +235,9 @@ pub async fn execute_done(
             .to_string(),
         });
     }
-    let children = get_child_notes(db, id).await.context(SqlxSnafu)?;
+    let children = get_child_notes(db, id).await.context(SqlxSnafu {
+        task: "getting children",
+    })?;
     if !children.is_empty() {
         return Err(DbError::ExecutionError {
             trace: "Cannot mark note as done if it has children".to_string(),

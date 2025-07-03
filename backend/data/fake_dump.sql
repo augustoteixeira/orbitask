@@ -6,9 +6,14 @@ DELETE FROM logs;
 DELETE FROM sqlite_sequence WHERE name IN ('notes', 'codes', 'attributes', 'logs');
 
 -- Sample codes
-INSERT INTO codes (name, script) VALUES
-  ('daily_check', '-- Lua: print("Checking daily tasks")'),
-  ('archive_old', '-- Lua: for each note older than X, archive it');
+INSERT INTO codes (name, capabilities, script) VALUES
+  ('daily_check', '["println"]',
+                  'forms = coroutine.create(function ()' || char(10) ||
+                  '  coroutine.yield({ Result =' ||
+                  '    { crazy = { label = "crazy", title =' ||
+                  '                  "Crazy code here!", form_type = "UInt" } } })' || char(10) ||
+                  'end)'),
+  ('archive_old', '[]', '-- Lua: for each note older than X, archive it');
 
 -- Root notes
 INSERT INTO notes (title, description, code_name) VALUES
