@@ -7,7 +7,7 @@ use rocket_db_pools::Connection;
 use crate::api::Authenticated;
 use crate::db_manage::{self};
 use crate::Db;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 
 #[derive(FromForm)]
 pub struct NewCodeForm {
@@ -61,7 +61,22 @@ pub struct Action {
 }
 
 #[derive(Debug)]
+pub struct Date(pub NaiveDate); //(#[serde(with = "date_format")] NaiveDate);
+
+const FORMAT: &str = "%Y-%m-%d";
+
+impl Serialize for Date {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let s = self.0.format(FORMAT).to_string();
+        serializer.serialize_str(&s)
+    }
+}
+
+#[derive(Debug, Serialize)]
 pub enum Value {
     UInt(u64),
-    Date(NaiveDate),
+    Date(Date),
 }

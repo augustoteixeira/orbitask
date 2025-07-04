@@ -4,7 +4,7 @@ use snafu::ResultExt;
 use std::collections::HashMap;
 
 use crate::{
-    api::codes::{Action, FormType, Value},
+    api::codes::{Action, Date, FormType, Value},
     db_manage::attributes::{get_attribute, set_attribute},
     sqlx::{FromRow, Row},
 };
@@ -12,7 +12,7 @@ use mlua::{
     Function, Lua, LuaSerdeExt, Table, Thread, ThreadStatus, Value as LuaValue,
 };
 use rocket_db_pools::Connection;
-use serde_json;
+use serde_json::Value as JsonValue;
 
 use crate::Db;
 
@@ -103,7 +103,7 @@ pub fn parse_fields(
                 .get(prefix)
                 .ok_or(format!("Missing field: {:?}", prefix))?;
             NaiveDate::parse_from_str(value, "%Y-%m-%d")
-                .map(Value::Date)
+                .map(|d| Value::Date(Date(d)))
                 .map_err(|e| format!("Invalid date: {e}").into())
         }
     }
@@ -112,6 +112,15 @@ pub fn parse_fields(
 #[derive(Serialize, Deserialize)]
 enum Command<T> {
     Result(T),
+    SysLog(String),
+}
+
+pub fn get_capability_name<T>(command: &Command<T>) -> String {
+    match command {
+        Command::Result(_) => "Result",
+        Command::SysLog(_) => "SysLog",
+    }
+    .to_string()
 }
 
 pub async fn run<R>(
@@ -119,7 +128,7 @@ pub async fn run<R>(
     code: Code,
     command_name: &str,
     id: i64,
-    arguments: String,
+    arguments: JsonValue,
 ) -> Result<R, DbError>
 where
     R: DeserializeOwned,
@@ -136,9 +145,10 @@ where
         task: "loading code",
     })?;
     let globals = lua.globals();
-    let thread: Thread = globals.get("forms").context(LuaSnafu {
+    let thread: Thread = globals.get(command_name).context(LuaSnafu {
         task: "getting forms",
     })?;
+    //thread.resume(mlua::Value::from_serde)
     while let ThreadStatus::Resumable | ThreadStatus::Running = thread.status()
     {
         let lua_command: mlua::Value = thread.resume(()).context(LuaSnafu {
@@ -149,9 +159,20 @@ where
                 .map_err(|e| DbError::ParseError {
                     when: format!("deserializing command: {e}"),
                 })?;
+        let command_name = get_capability_name(&command);
+        if !capabilities.iter().any(|c| c == command_name.as_str()) {
+            if command_name != "Result" {
+                return Err(DbError::ExecutionError {
+                    trace: format!("capability ({command_name}) not provided")
+                        .to_string(),
+                });
+            }
+        }
         match command {
-            Command::Result(s) => return Ok(s),
-            //    if capabilities.iter().any(|c| c == "println") {    }
+            Command::Result(a) => return Ok(a),
+            Command::SysLog(s) => {
+                println!("{s}");
+            }
         }
     }
     Err(DbError::ExecutionError {
@@ -171,7 +192,7 @@ pub async fn get_forms(
                 code,
                 "forms",
                 id,
-                "".to_string(),
+                JsonValue::Null,
             )
             .await?;
             Ok(forms)
@@ -213,9 +234,18 @@ pub async fn execute(
     match option_code {
         None => execute_done(db, id, action, value).await,
         Some(code) => {
-            unimplemented!()
-            //???
-            //let message = run::<String>(db, code, id).await?;
+            let forms = run::<HashMap<String, Action>>(
+                db,
+                code,
+                action.label.as_str(),
+                id,
+                serde_json::from_str(
+                    serde_json::to_string(value).unwrap().as_str(),
+                )
+                .unwrap(),
+            )
+            .await?;
+            Ok("".to_string())
         }
     }
 }
@@ -245,7 +275,7 @@ pub async fn execute_done(
     }
     match value {
         Value::Date(date) => {
-            set_attribute(db, id, "done", date.to_string().as_str()).await?
+            set_attribute(db, id, "done", date.0.to_string().as_str()).await?
         }
         _ => {
             return Err(DbError::ExecutionError {
