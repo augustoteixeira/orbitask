@@ -63,6 +63,7 @@ pub struct Action {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FormContainer {
     pub title: String,
+    pub label: String,
     pub action: Action,
 }
 

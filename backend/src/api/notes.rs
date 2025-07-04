@@ -97,10 +97,10 @@ pub async fn execute_action(
                     )
                 )
             })?;
-    let message = execute(&mut db, id, &action, &value).await.map_err(|e| {
+    let message = execute(&mut db, id, &form_container, &value).await.map_err(|e| {
         Flash::error(
             Redirect::to("/"),
-            format!("executing failed: id {id:?}, action {action:?}, value {:?}\n{e}", &value),
+            format!("executing failed: id {id:?}, form {form_container:?}, value {:?}\n{e}", &value),
         )
     })?;
     Ok(Flash::success(

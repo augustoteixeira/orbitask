@@ -2,6 +2,7 @@ use chrono::NaiveDate;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use snafu::ResultExt;
 use std::collections::HashMap;
+use std::sync::mpsc::{channel, Receiver, Sender};
 
 use crate::{
     api::codes::{Action, Date, FormContainer, FormType, Value},
@@ -114,12 +115,16 @@ pub fn parse_fields(
 enum Command<T> {
     Result(T),
     SysLog(String),
+    SetOwnAttribute { key: String, value: String },
+    GetOwnAttribute { key: String },
 }
 
 pub fn get_capability_name<T>(command: &Command<T>) -> String {
     match command {
         Command::Result(_) => "Result",
         Command::SysLog(_) => "SysLog",
+        Command::SetOwnAttribute { .. } => "SetOwnAttribute",
+        Command::GetOwnAttribute { .. } => "GetOwnAttribute",
     }
     .to_string()
 }
@@ -150,20 +155,17 @@ where
         task: "getting forms",
     })?;
     let arg_as_value: mlua::Value = lua.to_value(&arguments).unwrap();
-    let result: mlua::Value =
+    let mut result: mlua::Value =
         thread.resume(arg_as_value).context(LuaSnafu {
             task: "first resuming",
         })?;
-    while let ThreadStatus::Resumable | ThreadStatus::Running = thread.status()
-    {
-        let lua_command: mlua::Value = thread.resume(()).context(LuaSnafu {
-            task: "calling forms",
-        })?;
+    loop {
         let command: Command<R> =
-            lua.from_value(lua_command)
-                .map_err(|e| DbError::ParseError {
-                    when: format!("deserializing command: {e}"),
-                })?;
+            lua.from_value(result.clone()).map_err(|e| {
+                DbError::ParseError {
+                    when: format!("deserializing command {:?}: {}", &result, e),
+                }
+            })?;
         let command_name = get_capability_name(&command);
         if !capabilities.iter().any(|c| c == command_name.as_str()) {
             if command_name != "Result" {
@@ -173,16 +175,42 @@ where
                 });
             }
         }
-        match command {
+        let response: JsonValue = match command {
             Command::Result(a) => return Ok(a),
             Command::SysLog(s) => {
                 println!("{s}");
+                ().into()
             }
+            Command::SetOwnAttribute { key, value } => {
+                set_attribute(db, id, &key.clone(), &value.clone()).await?;
+                ().into()
+            }
+            Command::GetOwnAttribute { key } => {
+                get_attribute(db, id, &key.clone()).await?.into()
+            }
+        };
+        match thread.status() {
+            ThreadStatus::Finished => {
+                return Err(DbError::ExecutionError {
+                    trace: "script did not return".to_string(),
+                })
+            }
+            ThreadStatus::Error => {
+                return Err(DbError::ExecutionError {
+                    trace: "script did not return".to_string(),
+                })
+            }
+            _ => {}
         }
+        let response_as_value: mlua::Value = lua.to_value(&response).unwrap();
+        result = match response {
+            JsonValue::Null => thread.resume(()),
+            _ => thread.resume(response_as_value),
+        }
+        .context(LuaSnafu {
+            task: "resuming again",
+        })?;
     }
-    Err(DbError::ExecutionError {
-        trace: "script did not return".to_string(),
-    })
 }
 
 pub async fn get_forms(
@@ -224,10 +252,10 @@ pub async fn get_forms(
                 "done".to_string(),
                 FormContainer {
                     title: "Mark as done".to_string(),
+                    label: "done".to_string(),
                     action,
                 },
             );
-            println!("{:?}", serde_json::to_string(&result));
             Ok(result)
         }
     }
@@ -236,17 +264,17 @@ pub async fn get_forms(
 pub async fn execute(
     db: &mut Connection<Db>,
     id: i64,
-    action: &Action,
+    form_container: &FormContainer,
     value: &Value,
 ) -> Result<String, DbError> {
     let option_code = get_code(db, id).await?;
     match option_code {
-        None => execute_done(db, id, action, value).await,
+        None => execute_done(db, id, &form_container.action, value).await,
         Some(code) => {
-            let forms = run::<HashMap<String, Action>>(
+            let message = run::<String>(
                 db,
                 code,
-                action.label.as_str(),
+                form_container.label.as_str(),
                 id,
                 serde_json::from_str(
                     serde_json::to_string(value).unwrap().as_str(),
@@ -254,7 +282,7 @@ pub async fn execute(
                 .unwrap(),
             )
             .await?;
-            Ok("".to_string())
+            Ok(message)
         }
     }
 }
