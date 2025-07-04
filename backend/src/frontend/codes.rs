@@ -2,13 +2,17 @@ use std::collections::HashMap;
 
 use maud::{html, Markup};
 
-use crate::api::codes::{Action, FormType};
+use crate::api::codes::{Action, FormContainer, FormType};
 use crate::api::notes::rocket_uri_macro_execute_action;
 
-pub fn render_forms(note_id: i64, forms: HashMap<String, Action>) -> Markup {
+pub fn render_forms(
+    note_id: i64,
+    forms: HashMap<String, FormContainer>,
+) -> Markup {
     html! {
         @for a in &forms {
-            (render_form(note_id, a.1, a.0.to_string()))
+            h5 { (a.1.title) }
+            (render_form(note_id, &a.1.action, a.0.to_string()))
         }
     }
 }
@@ -37,7 +41,6 @@ pub fn render_form(note_id: i64, action: &Action, prefix: String) -> Markup {
         },
     };
     html! {
-        b { (action.title) }
         (form)
     }
 }

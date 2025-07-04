@@ -4,12 +4,13 @@ use snafu::ResultExt;
 use std::collections::HashMap;
 
 use crate::{
-    api::codes::{Action, Date, FormType, Value},
+    api::codes::{Action, Date, FormContainer, FormType, Value},
     db_manage::attributes::{get_attribute, set_attribute},
     sqlx::{FromRow, Row},
 };
 use mlua::{
-    Function, Lua, LuaSerdeExt, Table, Thread, ThreadStatus, Value as LuaValue,
+    Function, Lua, LuaNativeAsyncFn, LuaSerdeExt, Table, Thread, ThreadStatus,
+    Value as LuaValue,
 };
 use rocket_db_pools::Connection;
 use serde_json::Value as JsonValue;
@@ -148,7 +149,11 @@ where
     let thread: Thread = globals.get(command_name).context(LuaSnafu {
         task: "getting forms",
     })?;
-    //thread.resume(mlua::Value::from_serde)
+    let arg_as_value: mlua::Value = lua.to_value(&arguments).unwrap();
+    let result: mlua::Value =
+        thread.resume(arg_as_value).context(LuaSnafu {
+            task: "first resuming",
+        })?;
     while let ThreadStatus::Resumable | ThreadStatus::Running = thread.status()
     {
         let lua_command: mlua::Value = thread.resume(()).context(LuaSnafu {
@@ -183,11 +188,11 @@ where
 pub async fn get_forms(
     db: &mut Connection<Db>,
     id: i64,
-) -> Result<HashMap<String, Action>, DbError> {
+) -> Result<HashMap<String, FormContainer>, DbError> {
     let optional_code = get_code(db, id).await?;
     match optional_code {
         Some(code) => {
-            let forms = run::<HashMap<String, Action>>(
+            let forms = run::<HashMap<String, FormContainer>>(
                 db,
                 code,
                 "forms",
@@ -198,7 +203,7 @@ pub async fn get_forms(
             Ok(forms)
         }
         None => {
-            let mut result: HashMap<String, Action> = HashMap::new();
+            let mut result: HashMap<String, FormContainer> = HashMap::new();
             let children =
                 get_child_notes(db, id).await.context(SqlxSnafu {
                     task: "getting children",
@@ -210,12 +215,16 @@ pub async fn get_forms(
             if let Some(_) = done_status {
                 return Ok(result);
             }
+            let action = Action {
+                label: "done".to_string(),
+                title: "Day it was done".to_string(),
+                form_type: FormType::Date,
+            };
             result.insert(
                 "done".to_string(),
-                Action {
-                    label: "done".to_string(),
+                FormContainer {
                     title: "Mark as done".to_string(),
-                    form_type: FormType::Date,
+                    action,
                 },
             );
             println!("{:?}", serde_json::to_string(&result));

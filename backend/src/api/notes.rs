@@ -80,10 +80,11 @@ pub async fn execute_action(
             format!("could not get forms: note {:?} {e}", &id),
         )
     })?;
-    let action = forms.get(&form.action_label).ok_or(Flash::error(
+    let form_container = forms.get(&form.action_label).ok_or(Flash::error(
         Redirect::to(uri!(show_note(id))),
         format!("action not found: {}", form.action_label),
     ))?;
+    let action = &form_container.action;
     let value =
         parse_fields(&action.form_type, &form.fields, &action.label)
             .map_err(|e| {

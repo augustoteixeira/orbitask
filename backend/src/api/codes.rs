@@ -60,6 +60,12 @@ pub struct Action {
     pub form_type: FormType,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct FormContainer {
+    pub title: String,
+    pub action: Action,
+}
+
 #[derive(Debug)]
 pub struct Date(pub NaiveDate); //(#[serde(with = "date_format")] NaiveDate);
 
