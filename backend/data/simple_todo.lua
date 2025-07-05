@@ -23,13 +23,11 @@ end
 
 forms = coroutine.create(function ()
   done_status = coroutine.yield({ GetOwnAttribute = { key = "done" } })
-  print(done_status)
   if done_status == nil then
     return { Result =
       { done = { title = "Mark as done", label = "done",
                  action = { label = "date", title = "Day it was done", form_type = "Date" } } }
       }
-    --coroutine.yield({ SysLog = serializeTable(done_status) })
   else
     return { Result = { } }
   end

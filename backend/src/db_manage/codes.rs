@@ -119,6 +119,15 @@ enum Command<T> {
     GetOwnAttribute { key: String },
 }
 
+//#[derive(Serialize, Deserialize)]
+//pub enum
+
+//#[derive(Serialize, Deserialize)]
+//pub enum Capabilities {
+//    Syslog,
+//    GetAttribute
+//}
+
 pub fn get_capability_name<T>(command: &Command<T>) -> String {
     match command {
         Command::Result(_) => "Result",
