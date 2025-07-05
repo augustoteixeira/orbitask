@@ -22,7 +22,8 @@ function serializeTable(val, name, skipnewlines, depth)
 end
 
 forms = coroutine.create(function ()
-  done_status = coroutine.yield({ GetOwnAttribute = { key = "done" } })
+  id = coroutine.yield("GetId")
+  done_status = coroutine.yield({ GetAttribute = { id = id, key = "done" } })
   if done_status == nil then
     return { Result =
       { done = { title = "Mark as done", label = "done",
@@ -34,8 +35,9 @@ forms = coroutine.create(function ()
 end)
 
 done = coroutine.create(function (value)
+  id = coroutine.yield("GetId")
   coroutine.yield({ SysLog = "Marking note as done" })
   local date = value["Date"]
-  coroutine.yield({ SetOwnAttribute = { key = "done", value = date } })
+  coroutine.yield({ SetAttribute = { id = id, key = "done", value = date } })
   return { Result = "Note marked as done" }
 end)

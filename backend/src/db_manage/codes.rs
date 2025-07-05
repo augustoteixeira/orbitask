@@ -20,9 +20,10 @@ use super::{
     get_child_notes,
 };
 
+#[allow(dead_code)]
 #[derive(Debug, FromRow)]
 pub struct Code {
-    pub _name: String,
+    pub name: String,
     pub capabilities: String,
     pub script: String,
 }
@@ -110,13 +111,14 @@ pub fn parse_fields(
 
 #[derive(Debug, Serialize, Deserialize)]
 enum Command<T: Debug> {
+    GetId,
     Result(T),
     SysLog(String),
-    SetOwnAttribute { key: String, value: String },
-    GetOwnAttribute { key: String },
+    SetAttribute { id: i64, key: String, value: String },
+    GetAttribute { id: i64, key: String },
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum Range {
     Own,
     // Decendants,
@@ -124,34 +126,49 @@ pub enum Range {
     // All
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum Capabilities {
-    Syslog,
+    SysLog,
     GetAttribute(Range),
     SetAttribute(Range),
 }
 
-fn get_capability_name<T: Debug>(command: &Command<T>) -> String {
-    match command {
-        Command::Result(_) => "Result",
-        Command::SysLog(_) => "SysLog",
-        Command::SetOwnAttribute { .. } => "SetOwnAttribute",
-        Command::GetOwnAttribute { .. } => "GetOwnAttribute",
+fn within_range(
+    _db: &mut Connection<Db>,
+    range: &Range,
+    id: i64,
+    target_id: i64,
+) -> bool {
+    match range {
+        Range::Own => id == target_id,
     }
-    .to_string()
 }
 
 fn authorized<R: Debug>(
+    db: &mut Connection<Db>,
+    id: i64,
     command: &Command<R>,
-    capabilities: &Vec<String>,
+    capability: &Capabilities,
 ) -> bool {
-    let command_name = get_capability_name(&command);
-    if !capabilities.iter().any(|c| c == command_name.as_str()) {
-        if command_name != "Result" {
-            return false;
+    match command {
+        Command::GetId => true,
+        Command::Result(_) => true,
+        Command::SysLog(_) => matches!(capability, Capabilities::SysLog),
+        Command::GetAttribute { id: target_id, .. } => {
+            if let Capabilities::GetAttribute(r) = capability {
+                return within_range(db, r, id, *target_id);
+            } else {
+                false
+            }
+        }
+        Command::SetAttribute { id: target_id, .. } => {
+            if let Capabilities::SetAttribute(r) = capability {
+                return within_range(db, r, id, *target_id);
+            } else {
+                false
+            }
         }
     }
-    true
 }
 
 pub async fn run<R: Debug>(
@@ -165,7 +182,7 @@ where
     R: DeserializeOwned,
 {
     let lua = Lua::new();
-    let capabilities: Vec<String> =
+    let capabilities: Vec<Capabilities> =
         serde_json::from_str(code.capabilities.as_str()).map_err(|e| {
             DbError::ParseError {
                 when: format!("loading capabilities: {e}"),
@@ -188,10 +205,17 @@ where
         let command: Command<R> =
             lua.from_value(result.clone()).map_err(|e| {
                 DbError::ParseError {
-                    when: format!("deserializing command {:?}: {}", &result, e),
+                    when: format!(
+                        "deserializing command {:?}: {}",
+                        serde_json::to_string(&result),
+                        e
+                    ),
                 }
             })?;
-        if !authorized::<R>(&command, &capabilities) {
+        if !capabilities
+            .iter()
+            .any(|c| authorized::<R>(db, id, &command, c))
+        {
             return Err(DbError::ExecutionError {
                 trace: format!(
                     "command {command:?} not authorized in {capabilities:?}"
@@ -200,16 +224,17 @@ where
             });
         }
         let response: JsonValue = match command {
+            Command::GetId => id.into(),
             Command::Result(a) => return Ok(a),
             Command::SysLog(s) => {
                 println!("{s}");
                 ().into()
             }
-            Command::SetOwnAttribute { key, value } => {
+            Command::SetAttribute { id, key, value } => {
                 set_attribute(db, id, &key.clone(), &value.clone()).await?;
                 ().into()
             }
-            Command::GetOwnAttribute { key } => {
+            Command::GetAttribute { id, key } => {
                 get_attribute(db, id, &key.clone()).await?.into()
             }
         };

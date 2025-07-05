@@ -7,7 +7,8 @@ DELETE FROM sqlite_sequence WHERE name IN ('notes', 'codes', 'attributes', 'logs
 
 -- Sample codes
 INSERT INTO codes (name, capabilities, script) VALUES
-  ('simple_done', '["SysLog", "GetOwnAttribute", "SetOwnAttribute"]', CAST(readfile('simple_todo.lua') AS TEXT)),
+  ('simple_done', '["SysLog", { "GetAttribute": "Own" } , { "SetAttribute": "Own" } ]',
+  CAST(readfile('simple_todo.lua') AS TEXT)),
   ('archive_old', '[]', '-- Lua: for each note older than X, archive it');
 
 -- Root notes

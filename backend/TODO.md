@@ -3,7 +3,6 @@ Features
 
 - DB/API
   - delete note
-  - improve capabilities
   - * build alarms
     - add alarm to sql
     - add db_function to call expired alarms (and add to all endpoints, including "/")
