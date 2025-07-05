@@ -3,55 +3,51 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use snafu::ResultExt;
 use std::collections::HashMap;
 use std::fmt::Debug;
-use std::sync::mpsc::{channel, Receiver, Sender};
 
 use crate::{
     api::codes::{Action, Date, FormContainer, FormType, Value},
     db_manage::attributes::{get_attribute, set_attribute},
-    sqlx::{FromRow, Row},
+    sqlx::FromRow,
 };
-use mlua::{
-    Function, Lua, LuaNativeAsyncFn, LuaSerdeExt, Table, Thread, ThreadStatus,
-    Value as LuaValue,
-};
+use mlua::{Lua, LuaSerdeExt, Thread, ThreadStatus};
 use rocket_db_pools::Connection;
 use serde_json::Value as JsonValue;
 
 use crate::Db;
 
 use super::{
-    errors::{DbError, LuaSnafu, ParseSnafu, SqlxSnafu},
+    errors::{DbError, LuaSnafu, SqlxSnafu},
     get_child_notes,
 };
 
 #[derive(Debug, FromRow)]
 pub struct Code {
-    pub name: String,
+    pub _name: String,
     pub capabilities: String,
     pub script: String,
 }
 
-pub async fn create_code(
-    db: &mut Connection<Db>,
-    name: String,
-    capabilities: String,
-    script: String,
-) -> Result<i64, sqlx::Error> {
-    let row = sqlx::query(
-        r#"
-    INSERT INTO codes (name, capabilities, code)
-    VALUES (?, ?, ?)
-    "#,
-    )
-    .bind(name)
-    .bind(capabilities)
-    .bind(script)
-    .fetch_one(&mut ***db)
-    .await?;
+// pub async fn create_code(
+//     db: &mut Connection<Db>,
+//     name: String,
+//     capabilities: String,
+//     script: String,
+// ) -> Result<i64, sqlx::Error> {
+//     let row = sqlx::query(
+//         r#"
+//     INSERT INTO codes (name, capabilities, code)
+//     VALUES (?, ?, ?)
+//     "#,
+//     )
+//     .bind(name)
+//     .bind(capabilities)
+//     .bind(script)
+//     .fetch_one(&mut ***db)
+//     .await?;
 
-    let new_attribute_id: i64 = row.get("id");
-    Ok(new_attribute_id)
-}
+//     let new_attribute_id: i64 = row.get("id");
+//     Ok(new_attribute_id)
+// }
 
 pub async fn get_code(
     db: &mut Connection<Db>,
@@ -135,7 +131,7 @@ pub enum Capabilities {
     SetAttribute(Range),
 }
 
-pub fn get_capability_name<T: Debug>(command: &Command<T>) -> String {
+fn get_capability_name<T: Debug>(command: &Command<T>) -> String {
     match command {
         Command::Result(_) => "Result",
         Command::SysLog(_) => "SysLog",

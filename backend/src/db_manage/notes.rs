@@ -1,7 +1,9 @@
 use crate::sqlx::FromRow;
 use rocket_db_pools::sqlx::{self};
 use rocket_db_pools::Connection;
+use snafu::ResultExt;
 
+use super::errors::{DbError, NoNoteSnafu};
 use super::Db;
 
 #[derive(Debug, FromRow)]
@@ -48,7 +50,7 @@ pub async fn create_note(
 pub async fn get_note(
     db: &mut Connection<Db>,
     note_id: i64,
-) -> Result<Option<Note>, sqlx::Error> {
+) -> Result<Option<Note>, DbError> {
     let note = sqlx::query_as::<_, Note>(
         r#"
         SELECT id, parent_id, title, description, code_name
@@ -58,7 +60,8 @@ pub async fn get_note(
     )
     .bind(note_id)
     .fetch_optional(&mut ***db)
-    .await?;
+    .await
+    .context(NoNoteSnafu { id: note_id })?;
 
     Ok(note)
 }

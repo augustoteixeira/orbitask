@@ -1,2 +1,9 @@
 # orbitask
-A kanban board for recurring tasks
+
+A tasks manager that is scriptable through lua
+
+# Development
+
+Some convenient tools:
+- `cargo install just`
+- `sudo apt install entr`

@@ -99,37 +99,37 @@ pub fn meta() -> Markup {
     }
 }
 
-pub fn sidebar_style() -> Markup {
-    html! {
-      style {
-        r#"
-    .layout {
-      display: flex;
-      flex-direction: column;
-      gap: 2rem;
-    }
+// pub fn sidebar_style() -> Markup {
+//     html! {
+//       style {
+//         r#"
+//     .layout {
+//       display: flex;
+//       flex-direction: column;
+//       gap: 2rem;
+//     }
 
-    @media (min-width: 768px) {
-      .layout {
-        flex-direction: row;
-      }
+//     @media (min-width: 768px) {
+//       .layout {
+//         flex-direction: row;
+//       }
 
-      .sidebar {
-        flex: 1;
-        max-width: 250px;
-      }
+//       .sidebar {
+//         flex: 1;
+//         max-width: 250px;
+//       }
 
-      .main {
-        flex: 3;
-      }
-    }
+//       .main {
+//         flex: 3;
+//       }
+//     }
 
-    .sidebar {
-      background-color: var(--muted-bg);
-      padding: 1rem;
-      border-radius: 0.5rem;
-    }
-    "#
-      }
-    }
-}
+//     .sidebar {
+//       background-color: var(--muted-bg);
+//       padding: 1rem;
+//       border-radius: 0.5rem;
+//     }
+//     "#
+//       }
+//     }
+// }

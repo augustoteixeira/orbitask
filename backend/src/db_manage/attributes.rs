@@ -1,4 +1,3 @@
-use crate::sqlx::FromRow;
 use rocket_db_pools::Connection;
 use snafu::ResultExt;
 
@@ -6,12 +5,12 @@ use crate::Db;
 
 use super::errors::{DbError, SqlxSnafu};
 
-#[derive(Debug, FromRow)]
-pub struct Attribute {
-    pub note_id: i64,
-    pub key: String,
-    pub value: String,
-}
+// #[derive(Debug, FromRow)]
+// pub struct Attribute {
+//     pub note_id: i64,
+//     pub key: String,
+//     pub value: String,
+// }
 
 pub async fn set_attribute(
     db: &mut Connection<Db>,

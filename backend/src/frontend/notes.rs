@@ -180,6 +180,7 @@ pub fn new_note_form(codes: Vec<String>, parent_id: Option<i64>) -> Markup {
     }
 }
 
+#[allow(dead_code)]
 #[get("/notes/<_id>/edit")]
 pub async fn edit_note(
     _auth: Authenticated,

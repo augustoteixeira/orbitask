@@ -22,10 +22,10 @@ impl<'r> FromRequest<'r> for Authenticated {
             if cookie.value().to_string() == "admin" {
                 Outcome::Success(Authenticated)
             } else {
-                Outcome::Forward(Status::Ok)
+                Outcome::Forward(Status::Unauthorized)
             }
         } else {
-            Outcome::Forward(Status::Ok)
+            Outcome::Forward(Status::Unauthorized)
         }
     }
 }

@@ -14,7 +14,7 @@ pub async fn login(flash: Option<FlashMessage<'_>>) -> Markup {
               hgroup {
                 h1 { "Sign in" }
               }
-              form method="post" action="/login?next=/boards" {
+              form method="post" action="/login?next=/" {
                 input type="password" name="password" placeholder="Password"
                   aria-label="Password" autocomplete="current-password"
                   required;
