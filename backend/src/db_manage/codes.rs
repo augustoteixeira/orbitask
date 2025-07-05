@@ -2,6 +2,7 @@ use chrono::NaiveDate;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use snafu::ResultExt;
 use std::collections::HashMap;
+use std::fmt::Debug;
 use std::sync::mpsc::{channel, Receiver, Sender};
 
 use crate::{
@@ -111,24 +112,30 @@ pub fn parse_fields(
     }
 }
 
-#[derive(Serialize, Deserialize)]
-enum Command<T> {
+#[derive(Debug, Serialize, Deserialize)]
+enum Command<T: Debug> {
     Result(T),
     SysLog(String),
     SetOwnAttribute { key: String, value: String },
     GetOwnAttribute { key: String },
 }
 
-//#[derive(Serialize, Deserialize)]
-//pub enum
+#[derive(Serialize, Deserialize)]
+pub enum Range {
+    Own,
+    // Decendants,
+    // Ancestors,
+    // All
+}
 
-//#[derive(Serialize, Deserialize)]
-//pub enum Capabilities {
-//    Syslog,
-//    GetAttribute
-//}
+#[derive(Serialize, Deserialize)]
+pub enum Capabilities {
+    Syslog,
+    GetAttribute(Range),
+    SetAttribute(Range),
+}
 
-pub fn get_capability_name<T>(command: &Command<T>) -> String {
+pub fn get_capability_name<T: Debug>(command: &Command<T>) -> String {
     match command {
         Command::Result(_) => "Result",
         Command::SysLog(_) => "SysLog",
@@ -138,7 +145,20 @@ pub fn get_capability_name<T>(command: &Command<T>) -> String {
     .to_string()
 }
 
-pub async fn run<R>(
+fn authorized<R: Debug>(
+    command: &Command<R>,
+    capabilities: &Vec<String>,
+) -> bool {
+    let command_name = get_capability_name(&command);
+    if !capabilities.iter().any(|c| c == command_name.as_str()) {
+        if command_name != "Result" {
+            return false;
+        }
+    }
+    true
+}
+
+pub async fn run<R: Debug>(
     db: &mut Connection<Db>,
     code: Code,
     command_name: &str,
@@ -175,14 +195,13 @@ where
                     when: format!("deserializing command {:?}: {}", &result, e),
                 }
             })?;
-        let command_name = get_capability_name(&command);
-        if !capabilities.iter().any(|c| c == command_name.as_str()) {
-            if command_name != "Result" {
-                return Err(DbError::ExecutionError {
-                    trace: format!("capability ({command_name}) not provided")
-                        .to_string(),
-                });
-            }
+        if !authorized::<R>(&command, &capabilities) {
+            return Err(DbError::ExecutionError {
+                trace: format!(
+                    "command {command:?} not authorized in {capabilities:?}"
+                )
+                .to_string(),
+            });
         }
         let response: JsonValue = match command {
             Command::Result(a) => return Ok(a),
