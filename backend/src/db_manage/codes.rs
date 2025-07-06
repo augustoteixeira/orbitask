@@ -1,4 +1,5 @@
 use chrono::NaiveDate;
+use rocket_db_pools::sqlx::FromRow;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use snafu::ResultExt;
 use std::collections::HashMap;
@@ -7,13 +8,12 @@ use std::fmt::Debug;
 use crate::{
     api::codes::{Action, Date, FormContainer, FormType, Value},
     db_manage::attributes::{get_attribute, set_attribute},
-    sqlx::FromRow,
 };
 use mlua::{Lua, LuaSerdeExt, Thread, ThreadStatus};
 use rocket_db_pools::Connection;
 use serde_json::Value as JsonValue;
 
-use crate::Db;
+use crate::db_manage::Db;
 
 use super::{
     errors::{DbError, LuaSnafu, SqlxSnafu},

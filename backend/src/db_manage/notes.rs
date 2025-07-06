@@ -1,4 +1,4 @@
-use crate::sqlx::FromRow;
+use rocket_db_pools::sqlx::FromRow;
 use rocket_db_pools::sqlx::{self};
 use rocket_db_pools::Connection;
 use snafu::ResultExt;

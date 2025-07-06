@@ -1,10 +1,12 @@
 use crate::db_manage::attributes::get_attributes;
 use crate::db_manage::codes::get_all_code_names;
 use crate::db_manage::codes::get_forms;
-use crate::Db;
+use crate::db_manage::Db;
 use maud::{html, Markup};
+use rocket::get;
 use rocket::request::FlashMessage;
 use rocket::response::{Flash, Redirect};
+use rocket::uri;
 use rocket_db_pools::Connection;
 
 use crate::api::Authenticated;

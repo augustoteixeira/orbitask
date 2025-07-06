@@ -1,6 +1,7 @@
 use maud::{html, Markup};
 
 use super::style::{base_flash, footer, meta};
+use rocket::get;
 use rocket::request::FlashMessage;
 
 #[get("/login")]

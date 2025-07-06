@@ -1,5 +1,5 @@
-use crate::sqlx::pool::PoolConnection;
-use crate::sqlx::Sqlite;
+use rocket_db_pools::sqlx::pool::PoolConnection;
+use rocket_db_pools::sqlx::Sqlite;
 use rocket_db_pools::sqlx::{self, Row};
 
 use super::Db;

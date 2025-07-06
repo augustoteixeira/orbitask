@@ -1,7 +1,7 @@
 use rocket_db_pools::Connection;
 use snafu::ResultExt;
 
-use crate::Db;
+use crate::db_manage::Db;
 
 use super::errors::{DbError, SqlxSnafu};
 

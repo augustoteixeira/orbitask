@@ -1,6 +1,6 @@
 use crate::db_manage;
+use crate::db_manage::Db;
 use crate::utils::RateLimiter;
-use crate::Db;
 
 use bcrypt::verify;
 use std::net::IpAddr;
@@ -8,7 +8,9 @@ use std::time::Duration;
 
 use rocket::form::Form;
 use rocket::http::{Cookie, CookieJar};
+use rocket::post;
 use rocket::response::{Flash, Redirect};
+use rocket::FromForm;
 use rocket::State;
 use rocket_db_pools::Connection;
 
