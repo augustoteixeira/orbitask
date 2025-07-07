@@ -6,6 +6,7 @@ mod utils;
 #[macro_use]
 extern crate rocket;
 
+use backend::unauthorized;
 use db_manage::Db;
 use utils::RateLimiter;
 
@@ -32,26 +33,27 @@ fn rocket_config() -> Figment {
     Config::figment().merge(("secret_key", secret_key))
 }
 
-#[catch(401)]
-fn unauthorized() -> Flash<Redirect> {
-    Flash::error(Redirect::to(uri!("/login")), "You must login first!")
-}
-
 #[rocket::main]
 async fn main() -> Result<(), Error> {
     // setup rocket and db
-    let rocket = rocket::custom(rocket_config())
+    let config = rocket_config();
+    let rocket = rocket::custom(config)
         .manage(RateLimiter::new())
         .attach(Db::init())
         .mount("/static", FileServer::from("static"))
-        .mount("/", routes![api::login_submit])
-        .mount("/", routes![api::logout_submit])
-        .mount("/", routes![api::create_note_submit])
-        .mount("/", routes![api::notes::execute_action])
-        .mount("/", routes![frontend::login::login])
-        .mount("/", routes![frontend::notes::show_note])
-        .mount("/", routes![frontend::notes::new_note])
-        .mount("/", routes![frontend::notes::root_notes])
+        .mount(
+            "/",
+            routes![
+                api::login_submit,
+                api::logout_submit,
+                api::create_note_submit,
+                api::notes::execute_action,
+                frontend::login::login,
+                frontend::notes::show_note,
+                frontend::notes::new_note,
+                frontend::notes::root_notes,
+            ],
+        )
         .register("/", catchers![unauthorized])
         .ignite()
         .await

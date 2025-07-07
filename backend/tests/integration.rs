@@ -1,6 +1,7 @@
 use backend::db_manage::Db;
 use backend::utils::RateLimiter;
-use rocket::routes;
+use backend::{internal_error, unauthorized};
+use rocket::{catchers, routes};
 use rocket::{Build, Rocket};
 use rocket_db_pools::Database;
 
@@ -12,6 +13,19 @@ pub async fn spawn_test_rocket() -> Rocket<Build> {
     rocket::custom(figment)
         .attach(Db::init())
         .manage(RateLimiter::new())
-        .mount("/", routes![backend::frontend::notes::root_notes])
-        .mount("/", routes![backend::frontend::login::login])
+        .mount(
+            "/",
+            routes![
+                backend::api::login_submit,
+                backend::api::logout_submit,
+                backend::api::create_note_submit,
+                backend::api::notes::execute_action,
+                backend::frontend::login::login,
+                backend::frontend::notes::show_note,
+                backend::frontend::notes::new_note,
+                backend::frontend::notes::root_notes,
+            ],
+        )
+        .register("/", catchers![unauthorized])
+        .register("/", catchers![internal_error])
 }

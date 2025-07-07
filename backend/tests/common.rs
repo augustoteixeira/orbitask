@@ -1,55 +1,19 @@
 use rocket_db_pools::sqlx::SqlitePool;
-use std::fs;
-use std::path::Path;
-use std::process::Command;
 
-/// Copies the SQL dump into a new SQLite database file.
+use sqlx::{sqlite::SqlitePoolOptions, Executor};
+
 pub async fn prepare_test_db() -> SqlitePool {
-    let db_path = "test.sqlite";
-
-    if Path::new(db_path).exists() {
-        fs::remove_file(db_path).unwrap();
-    }
-
-    // Load init.sql
-    let output = Command::new("sqlite3")
-        .arg(db_path)
-        .arg(".read tests/meta.sql")
-        .output()
-        .expect("Failed to run sqlite3");
-
-    assert!(
-        output.status.success(),
-        "Failed to prepare meta table: {}",
-        String::from_utf8_lossy(&output.stderr)
-    );
-
-    // Load test_dump.sql
-    let output = Command::new("sqlite3")
-        .arg(db_path)
-        .arg(".read migrations/001-init.sql")
-        .output()
-        .expect("Failed to run sqlite3");
-
-    assert!(
-        output.status.success(),
-        "Failed to prepare initial migration: {}",
-        String::from_utf8_lossy(&output.stderr)
-    );
-
-    // Load test_dump.sql
-    let output = Command::new("sqlite3")
-        .arg(db_path)
-        .arg(".read tests/test_dump.sql")
-        .output()
-        .expect("Failed to run sqlite3");
-    assert!(
-        output.status.success(),
-        "Failed to prepare test database: {}",
-        String::from_utf8_lossy(&output.stderr)
-    );
-
-    SqlitePool::connect(&format!("sqlite://{}", db_path))
+    let pool = SqlitePoolOptions::new()
+        .max_connections(1)
+        .connect(":memory:")
         .await
-        .expect("Failed to connect to test database")
+        .unwrap();
+
+    let meta = include_str!(".././tests/meta.sql");
+    let migration = include_str!("../migrations/001-init.sql");
+    let dump = include_str!(".././tests/test_dump.sql");
+    pool.execute(meta).await.unwrap();
+    pool.execute(migration).await.unwrap();
+    pool.execute(dump).await.unwrap();
+    pool
 }

@@ -36,6 +36,7 @@ pub async fn login_submit(
     limiter: &State<RateLimiter>,
     next: Option<String>,
 ) -> Result<Redirect, Flash<Redirect>> {
+    println!("A");
     let ip_str = ip.to_string();
     if limiter.too_many_attempts(&ip_str, 5, Duration::from_secs(600)) {
         return Err(Flash::error(
