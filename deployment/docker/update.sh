@@ -3,6 +3,7 @@ set -e
 
 cd /opt/orbitask
 git pull
+cd backend
 docker build -t orbitask .
 docker stop orbitask || true
 docker rm orbitask || true

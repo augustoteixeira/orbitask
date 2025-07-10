@@ -1,0 +1,11 @@
+VPS_USER=youruser
+VPS_HOST=your.vps.ip.or.domain
+REMOTE_DIR=/opt/orbitask
+LOCAL_BIN=backend/target/release/backend
+
+ssh "$VPS_USER@$VPS_HOST" "mkdir -p $REMOTE_DIR"
+scp "$LOCAL_BIN" "$VPS_USER@$VPS_HOST:$REMOTE_DIR"
+
+ssh "$VPS_USER@$VPS_HOST" "sudo supervisorctl restart orbitask"
+
+echo "✅ Deployment complete"
