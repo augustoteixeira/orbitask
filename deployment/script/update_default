@@ -1,11 +1,49 @@
+set -e  # Exit on error
+set -o pipefail
+
 VPS_USER=youruser
 VPS_HOST=your.vps.ip.or.domain
 REMOTE_DIR=/opt/orbitask
+REMOTE_BIN="$REMOTE_DIR/backend"
 LOCAL_BIN=backend/target/release/backend
 
-ssh "$VPS_USER@$VPS_HOST" "mkdir -p $REMOTE_DIR"
-scp "$LOCAL_BIN" "$VPS_USER@$VPS_HOST:$REMOTE_DIR"
 
-ssh "$VPS_USER@$VPS_HOST" "sudo supervisorctl restart orbitask"
+echo "🚀 Starting deployment to $VPS_HOST"
 
-echo "✅ Deployment complete"
+# Create remote directory
+echo "📁 Ensuring remote directory exists..."
+ssh "$VPS_USER@$VPS_HOST" "mkdir -p '$REMOTE_DIR'" || {
+    echo "❌ Failed to create remote directory"
+    exit 1
+}
+
+# Stop supervisor task first
+echo "🛑 Stopping orbitask service..."
+ssh "$VPS_USER@$VPS_HOST" "sudo supervisorctl stop orbitask" || {
+    echo "❌ Failed to stop orbitask with supervisor"
+    exit 1
+}
+
+# Copy the binary
+echo "📤 Uploading new binary..."
+scp "$LOCAL_BIN" "$VPS_USER@$VPS_HOST:$REMOTE_BIN" || {
+    echo "❌ Failed to upload binary"
+    exit 1
+}
+
+# Set correct permissions just in case
+echo "🔐 Setting executable permission..."
+ssh "$VPS_USER@$VPS_HOST" "chmod +x '$REMOTE_BIN'"
+
+# Restart the service
+echo "✅ Restarting orbitask service..."
+ssh "$VPS_USER@$VPS_HOST" "sudo supervisorctl start orbitask" || {
+    echo "❌ Failed to start orbitask with supervisor"
+    exit 1
+}
+
+# Confirm it’s running
+echo "🔍 Checking service status:"
+ssh "$VPS_USER@$VPS_HOST" "sudo supervisorctl status orbitask"
+
+echo "🎉 Deployment complete!"
