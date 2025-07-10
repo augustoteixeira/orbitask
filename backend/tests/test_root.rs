@@ -1,24 +1,16 @@
-// mod common;
-// mod integration;
+mod common;
+use rocket::{http::Status, tokio};
 
-// use rocket::tokio;
+use common::LOCALHOST;
 
-// #[tokio::test]
-// async fn test_root_notes_shows_test_note() {
-//     let _ = common::prepare_test_db().await;
-
-//     let rocket = integration::spawn_test_rocket().await;
-//     let client = rocket::local::asynchronous::Client::untracked(rocket)
-//         .await
-//         .expect("valid rocket instance");
-
-//     let response = client.get("/login").dispatch().await;
-//     println!("{:?}", response);
-//     assert_eq!(response.status(), rocket::http::Status::Ok);
-//     let body = response.into_string().await.unwrap();
-//     println!("{:?}", body);
-//     assert!(
-//         body.contains("Test note"),
-//         "Response body did not contain expected note title: {body}"
-//     );
-// }
+#[tokio::test]
+async fn test_root() {
+    let _ = common::prepare_test_db().await;
+    let client = common::login_as_test_user().await;
+    let response = client.get("/").remote(LOCALHOST.into()).dispatch().await;
+    let contents = response
+        .into_string()
+        .await
+        .expect("Could not get contents");
+    // TODO Check children
+}
