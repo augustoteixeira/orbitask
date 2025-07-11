@@ -2,19 +2,19 @@ Work sprint
 -----------
 
 A) Editorial work
-  - Comments
-    - currently broken
   - Functionality
-    - Create subnote effect
+    - create_subnote effect
+    - layout
+      - make endpoints return enum implementing Responder
+      - improve css
   - Lua
     - codes: journal, article, referee
 B) Monthly payments
-  - Create a pall endpoint
+  - Create a poll endpoint
 
 Features
 --------
 
-- DB/API
   - delete note
   - build alarms
     - add alarm to sql
@@ -30,6 +30,7 @@ Features
 Improvements
 ------------
 
+- make html pretty: https://github.com/servo/html5ever/blob/main/rcdom/examples/print-rcdom.rs
 - make all endpoints return a single enum that implements Responder.
 - make tests call the handler directly (instead of calling an endpoint) through Client (these tests look more like unit tests afterall).
 - improve flash with a nested structure (perhaps html?) instead of a string.

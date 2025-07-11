@@ -41,8 +41,8 @@ pub fn render(page: Page) -> Markup {
 
 pub fn base_flash(flash: Option<FlashMessage<'_>>) -> Markup {
     html! {
-      footer."container-fluid" {
-        @if let Some(msg) = flash {
+      @if let Some(msg) = flash {
+        footer."container-fluid" {
           p style={
             @let base = r#"margin: 1rem 0; padding: 0.75rem;
                            border-radius: 0.5rem; font-weight: bold;"#;
@@ -65,9 +65,9 @@ pub fn header() -> maud::Markup {
       header {
         nav style=r#"display: flex; justify-content: space-between;
                      align-items: center;"# {
-          h1 { "Orbitask" }
+          h1 style=r#"margin-bottom: 0"# { "Orbitask" }
 
-          form method="post" action="/logout" {
+          form method="post" action="/logout" style="margin-bottom: 0" {
             button type="submit" class="secondary"
                    style="padding: 0.2em 0.75em;" { "Logout" }
           }

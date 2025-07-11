@@ -25,17 +25,17 @@ pub fn notes_grid(notes: Vec<Note>) -> Markup {
             padding: 1rem; border: 1px solid var(--muted-border);
             border-radius: 0.5rem; margin: 0.5rem;
           "# {
-              a href={(format!("/notes/{}", note.id))} {
-                (note.title)
+            a href={(format!("/notes/{}", note.id))} {
+              (note.title)
+            }
+            p style="font-size: 0.8em; color: var(--muted-color); margin-bottom: 0.2rem" {
+              (note.description)
+            }
+            @if let Some(code) = &note.code_name {
+              p style="font-size: 0.75em; color: var(--muted-color); font-style: italic; margin-bottom: 0.2rem" {
+                "Script: " (code)
               }
-              p style="font-size: 0.8em; color: var(--muted-color);" {
-                (note.description)
-              }
-              @if let Some(code) = &note.code_name {
-                p style="font-size: 0.75em; color: var(--muted-color); font-style: italic;" {
-                  "Script: " (code)
-                }
-              }
+            }
           }
         }
       }
@@ -106,28 +106,29 @@ pub async fn show_note(
           br;
           a href=(uri!(show_note(id))) { "← Back to Parent" }
         }
-        h3 { (note.title) }
-        p style="color: var(--muted-color); font-size: 0.9em;" {
+        h3 style="margin-bottom: 1rem; margin-top: 1rem;" { (note.title) }
+        p style="color: var(--muted-color); font-size: 0.9em; margin-bottom: 0.5rem" {
             "Code: " (note.code_name.unwrap_or("NONE".to_string()))
         }
         @for a in attributes {
-            p style="color: var(--muted-color); font-size: 0.9em;" {
+            p style="color: var(--muted-color); font-size: 0.9em; margin-bottom: 0.5rem" {
                 (a.0) ":" (a.1)
             }
         }
+        article style=r#"
+          padding: 1rem; border: 1px solid var(--muted-border);
+          border-radius: 0.5rem; margin: 0.5rem; padding: 0.5rem
+        "# {
+          p style="margin-bottom: 0.2rem" { (note.description) }
+        }
+        (render_forms(note.id, forms))
         a href={(uri!(new_note(parent_id = Some(note.id))))} role="button" {
           "Create Subnote"
         }
         a href={(uri!(edit_note(note.id)))} role="button" {
           "Edit Note"
         }
-        article style=r#"
-          padding: 1rem; border: 1px solid var(--muted-border);
-          border-radius: 0.5rem; margin: 0.5rem;
-        "# {
-          p { (note.description) }
-        }
-        p { (render_forms(note.id, forms))}
+        h5 {"Subnotes"}
         (rendered_children);
         @for l in logs {
             p style="color: var(--muted-color); font-size: 0.9em;" { (l) }
