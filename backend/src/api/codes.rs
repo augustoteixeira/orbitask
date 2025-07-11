@@ -1,41 +1,43 @@
+use crate::db_manage::codes::create_code;
 use chrono::NaiveDate;
-//use rocket::form::Form;
+use rocket::form::Form;
 //use rocket::post;
-//use rocket::response::{Flash, Redirect};
-//use rocket_db_pools::Connection;
+use rocket::response::{Flash, Redirect};
+use rocket_db_pools::Connection;
 
-//use crate::api::Authenticated;
+use crate::api::Authenticated;
+use rocket::{post, FromForm};
 //use crate::db_manage::{self};
-//use crate::Db;
+use crate::Db;
 use serde::{Deserialize, Serialize, Serializer};
 
-// #[derive(FromForm)]
-// pub struct NewCodeForm {
-//     pub name: String,
-//     pub capabilities: String,
-//     pub script: String,
-// }
+#[derive(FromForm)]
+pub struct NewCodeForm {
+    pub name: String,
+    pub capabilities: String,
+    pub script: String,
+}
 
-// #[post("/codes", data = "<form>")]
-// pub async fn create_code_submit(
-//     _auth: Authenticated,
-//     mut db: Connection<Db>,
-//     form: Form<NewCodeForm>,
-// ) -> Result<Flash<Redirect>, Flash<Redirect>> {
-//     let NewCodeForm {
-//         name,
-//         capabilities,
-//         script,
-//     } = form.into_inner();
+#[post("/codes/new", data = "<form>")]
+pub async fn create_code_submit(
+    _auth: Authenticated,
+    mut db: Connection<Db>,
+    form: Form<NewCodeForm>,
+) -> Result<Flash<Redirect>, Flash<Redirect>> {
+    let NewCodeForm {
+        name,
+        capabilities,
+        script,
+    } = form.into_inner();
 
-//     match db_manage::create_code(&mut db, name, capabilities, script).await {
-//         Ok(_) => Ok(Flash::success(Redirect::to("/codes"), "Code created.")),
-//         Err(_) => Err(Flash::error(
-//             Redirect::to("/codes"), // TODO use uri! macro
-//             "Failed to create code.",
-//         )),
-//     }
-// }
+    match create_code(&mut db, name, capabilities, script).await {
+        Ok(id) => Ok(Flash::success(Redirect::to("/"), "Code created.")),
+        Err(e) => Err(Flash::error(
+            Redirect::to("/codes/new"), // TODO use uri! macro
+            format!("Failed to create code: {e}"),
+        )),
+    }
+}
 
 // struct StructType {
 //     fields: Vec<Action>

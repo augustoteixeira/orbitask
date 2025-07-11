@@ -28,27 +28,34 @@ pub struct Code {
     pub script: String,
 }
 
-// pub async fn create_code(
-//     db: &mut Connection<Db>,
-//     name: String,
-//     capabilities: String,
-//     script: String,
-// ) -> Result<i64, sqlx::Error> {
-//     let row = sqlx::query(
-//         r#"
-//     INSERT INTO codes (name, capabilities, code)
-//     VALUES (?, ?, ?)
-//     "#,
-//     )
-//     .bind(name)
-//     .bind(capabilities)
-//     .bind(script)
-//     .fetch_one(&mut ***db)
-//     .await?;
-
-//     let new_attribute_id: i64 = row.get("id");
-//     Ok(new_attribute_id)
-// }
+pub async fn create_code(
+    db: &mut Connection<Db>,
+    name: String,
+    capabilities: String,
+    script: String,
+) -> Result<i64, DbError> {
+    sqlx::query(
+        r#"
+    INSERT INTO codes (name, capabilities, script)
+    VALUES (?, ?, ?)
+        "#,
+    )
+    .bind(name)
+    .bind(capabilities)
+    .bind(script)
+    .execute(&mut ***db)
+    .await
+    .context(SqlxSnafu {
+        task: "creating code",
+    })?;
+    let new_code_id: (i64,) = sqlx::query_as("SELECT last_insert_rowid()")
+        .fetch_one(&mut ***db)
+        .await
+        .context(SqlxSnafu {
+            task: "getting created code",
+        })?;
+    Ok(new_code_id.0)
+}
 
 pub async fn get_code(
     db: &mut Connection<Db>,
