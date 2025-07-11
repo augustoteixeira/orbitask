@@ -10,37 +10,9 @@ use rocket::uri;
 use rocket_db_pools::Connection;
 
 use crate::api::Authenticated;
-use crate::db_manage::{get_child_notes, get_note, get_root_notes, Note};
-use crate::frontend::codes::render_forms;
+use crate::db_manage::{get_child_notes, get_note, get_root_notes};
+use crate::frontend::render::{render_note, render_notes_grid};
 use crate::frontend::style::{base_flash, render, Page};
-
-pub fn notes_grid(notes: Vec<Note>) -> Markup {
-    html! {
-      section style=r#"
-        display: grid; gap: 1rem;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      "# {
-        @for note in notes {
-          article style=r#"
-            padding: 1rem; border: 1px solid var(--muted-border);
-            border-radius: 0.5rem; margin: 0.5rem;
-          "# {
-            a href={(format!("/notes/{}", note.id))} {
-              (note.title)
-            }
-            p style="font-size: 0.8em; color: var(--muted-color); margin-bottom: 0.2rem" {
-              (note.description)
-            }
-            @if let Some(code) = &note.code_name {
-              p style="font-size: 0.75em; color: var(--muted-color); font-style: italic; margin-bottom: 0.2rem" {
-                "Script: " (code)
-              }
-            }
-          }
-        }
-      }
-    }
-}
 
 #[get("/")]
 pub async fn root_notes(
@@ -53,7 +25,7 @@ pub async fn root_notes(
       main {
         section class="main" {
           h2 { "Home" }
-          (notes_grid(notes))
+          (render_notes_grid(&notes))
           a href="/notes/new" role="button" { "Create New Root Note" }
         }
       }
@@ -88,8 +60,6 @@ pub async fn show_note(
 
     let child_notes = get_child_notes(&mut db, id).await.unwrap();
 
-    let rendered_children = notes_grid(child_notes);
-
     let attributes: Vec<(String, String)> =
         get_attributes(&mut db, id).await.unwrap();
 
@@ -99,42 +69,7 @@ pub async fn show_note(
         Flash::error(Redirect::to("/"), format!("Failed to load forms: {e}"))
     })?;
 
-    let contents = html! {
-      main class="container" {
-        a href="/" { "← Back to Notes" }
-        @if let Some(id) = note.parent_id {
-          br;
-          a href=(uri!(show_note(id))) { "← Back to Parent" }
-        }
-        h3 style="margin-bottom: 1rem; margin-top: 1rem;" { (note.title) }
-        p style="color: var(--muted-color); font-size: 0.9em; margin-bottom: 0.5rem" {
-            "Code: " (note.code_name.unwrap_or("NONE".to_string()))
-        }
-        @for a in attributes {
-            p style="color: var(--muted-color); font-size: 0.9em; margin-bottom: 0.5rem" {
-                (a.0) ":" (a.1)
-            }
-        }
-        article style=r#"
-          padding: 1rem; border: 1px solid var(--muted-border);
-          border-radius: 0.5rem; margin: 0.5rem; padding: 0.5rem
-        "# {
-          p style="margin-bottom: 0.2rem" { (note.description) }
-        }
-        (render_forms(note.id, forms))
-        a href={(uri!(new_note(parent_id = Some(note.id))))} role="button" {
-          "Create Subnote"
-        }
-        a href={(uri!(edit_note(note.id)))} role="button" {
-          "Edit Note"
-        }
-        h5 {"Subnotes"}
-        (rendered_children);
-        @for l in logs {
-            p style="color: var(--muted-color); font-size: 0.9em;" { (l) }
-        }
-      }
-    };
+    let contents = render_note(&note, &attributes, &forms, &child_notes, &logs);
 
     let page = Page {
         title: html! { title { (note.title) } },
