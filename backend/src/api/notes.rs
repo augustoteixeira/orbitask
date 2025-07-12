@@ -7,6 +7,7 @@ use std::collections::HashMap;
 
 use crate::api::Authenticated;
 use crate::db_manage::codes::{execute, get_forms, parse_fields};
+use crate::db_manage::notes::update_note;
 use crate::db_manage::{create_note, Db};
 use crate::frontend::notes::rocket_uri_macro_show_note;
 
@@ -108,4 +109,36 @@ pub async fn execute_action(
         Redirect::to(uri!(show_note(id))),
         format!("Code correctly executed: {message}"),
     ))
+}
+
+#[derive(FromForm)]
+pub struct EditNoteForm {
+    pub title: String,
+    pub description: String,
+    pub code_name: Option<String>,
+}
+
+#[post("/notes/<id>/edit", data = "<form>")]
+pub async fn edit_note_submit(
+    _auth: Authenticated,
+    mut db: Connection<Db>,
+    id: i64,
+    form: Form<EditNoteForm>,
+) -> Result<Flash<Redirect>, Flash<Redirect>> {
+    let EditNoteForm {
+        title,
+        description,
+        code_name,
+    } = form.into_inner();
+
+    match update_note(&mut db, id, title, description, code_name).await {
+        Ok(()) => Ok(Flash::success(
+            Redirect::to(uri!(crate::frontend::notes::show_note(id))),
+            "Note updated.",
+        )),
+        Err(e) => Err(Flash::error(
+            Redirect::to(uri!(crate::frontend::notes::edit_note(id))),
+            format!("Failed to update note: {e}"),
+        )),
+    }
 }

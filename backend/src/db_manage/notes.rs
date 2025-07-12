@@ -96,3 +96,30 @@ pub async fn get_root_notes(
 
     Ok(notes)
 }
+
+pub async fn update_note(
+    db: &mut Connection<Db>,
+    note_id: i64,
+    title: String,
+    description: String,
+    code_name: Option<String>,
+) -> Result<(), DbError> {
+    sqlx::query(
+        r#"
+        UPDATE notes
+        SET title = ?, description = ?, code_name = ?
+        WHERE id = ?
+        "#,
+    )
+    .bind(title)
+    .bind(description)
+    .bind(code_name)
+    .bind(note_id)
+    .execute(&mut ***db)
+    .await
+    .context(SqlxSnafu {
+        task: "updating note",
+    })?;
+
+    Ok(())
+}
