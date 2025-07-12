@@ -3,7 +3,7 @@ use rocket_db_pools::sqlx::{self};
 use rocket_db_pools::Connection;
 use snafu::ResultExt;
 
-use super::errors::{DbError, NoNoteSnafu};
+use super::errors::{DbError, NoNoteSnafu, SqlxSnafu};
 use super::Db;
 
 #[derive(Debug, FromRow)]
@@ -21,8 +21,7 @@ pub async fn create_note(
     title: String,
     description: String,
     code_name: Option<String>,
-) -> Result<i64, sqlx::Error> {
-    println!("{parent_id:?}, {title:?}, {description:?}, {code_name:?}");
+) -> Result<i64, DbError> {
     sqlx::query(
         r#"
       INSERT INTO notes (parent_id, title, description, code_name)
@@ -34,12 +33,18 @@ pub async fn create_note(
     .bind(&description)
     .bind(&code_name)
     .execute(&mut ***db)
-    .await?;
+    .await
+    .context(SqlxSnafu {
+        task: "creating note",
+    })?;
 
     // Now get the last inserted row ID
     let row: (i64,) = sqlx::query_as("SELECT last_insert_rowid()")
         .fetch_one(&mut ***db)
-        .await?;
+        .await
+        .context(SqlxSnafu {
+            task: "getting created note",
+        })?;
 
     let inserted_id = row.0;
 

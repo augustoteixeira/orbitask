@@ -51,6 +51,7 @@ pub async fn create_code_submit(
 pub enum FormType {
     UInt,
     Date,
+    // Empty,
     // Struct(StuctType)
     // Enum(EnumType)
 }

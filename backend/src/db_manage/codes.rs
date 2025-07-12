@@ -8,6 +8,7 @@ use std::fmt::Debug;
 use crate::{
     api::codes::{Action, Date, FormContainer, FormType, Value},
     db_manage::attributes::{get_attribute, set_attribute},
+    db_manage::notes::create_note,
 };
 use mlua::{Lua, LuaSerdeExt, Thread, ThreadStatus};
 use rocket_db_pools::Connection;
@@ -121,8 +122,21 @@ enum Command<T: Debug> {
     GetId,
     Result(T),
     SysLog(String),
-    SetAttribute { id: i64, key: String, value: String },
-    GetAttribute { id: i64, key: String },
+    SetAttribute {
+        id: i64,
+        key: String,
+        value: String,
+    },
+    GetAttribute {
+        id: i64,
+        key: String,
+    },
+    CreateChild {
+        parent_id: Option<i64>,
+        title: String,
+        description: String,
+        code_name: Option<String>,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -138,16 +152,18 @@ pub enum Capabilities {
     SysLog,
     GetAttribute(Range),
     SetAttribute(Range),
+    CreateChild(Range),
 }
 
 fn within_range(
     _db: &mut Connection<Db>,
     range: &Range,
     id: i64,
-    target_id: i64,
+    target_id: Option<i64>,
 ) -> bool {
+    println!("range: {range:?}, id: {id}, {target_id:?}");
     match range {
-        Range::Own => id == target_id,
+        Range::Own => matches!(Some(id), target_id),
     }
 }
 
@@ -163,14 +179,21 @@ fn authorized<R: Debug>(
         Command::SysLog(_) => matches!(capability, Capabilities::SysLog),
         Command::GetAttribute { id: target_id, .. } => {
             if let Capabilities::GetAttribute(r) = capability {
-                return within_range(db, r, id, *target_id);
+                return within_range(db, r, id, Some(*target_id));
             } else {
                 false
             }
         }
         Command::SetAttribute { id: target_id, .. } => {
             if let Capabilities::SetAttribute(r) = capability {
-                return within_range(db, r, id, *target_id);
+                return within_range(db, r, id, Some(*target_id));
+            } else {
+                false
+            }
+        }
+        Command::CreateChild { parent_id, .. } => {
+            if let Capabilities::CreateChild(r) = capability {
+                return within_range(db, r, id, *parent_id);
             } else {
                 false
             }
@@ -244,6 +267,14 @@ where
             Command::GetAttribute { id, key } => {
                 get_attribute(db, id, &key.clone()).await?.into()
             }
+            Command::CreateChild {
+                parent_id,
+                title,
+                description,
+                code_name,
+            } => create_note(db, parent_id, title, description, code_name)
+                .await?
+                .into(),
         };
         match thread.status() {
             ThreadStatus::Finished => {

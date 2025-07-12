@@ -3,7 +3,6 @@ Work sprint
 
 A) Editorial work
   - Functionality
-    - create_subnote lua effect
     - layout
       - make endpoints return enum implementing Responder
       - improve css

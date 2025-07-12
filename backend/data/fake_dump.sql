@@ -9,17 +9,18 @@ DELETE FROM sqlite_sequence WHERE name IN ('notes', 'codes', 'attributes', 'logs
 INSERT INTO codes (name, capabilities, script) VALUES
   ('simple_done', '["SysLog", { "GetAttribute": "Own" } , { "SetAttribute": "Own" } ]',
   CAST(readfile('simple_todo.lua') AS TEXT)),
-  ('archive_old', '[]', '-- Lua: for each note older than X, archive it');
+  ('create_child', '["SysLog", { "CreateChild": "Own" }]',
+  CAST(readfile('create_child.lua') AS TEXT));
 
 -- Root notes
 INSERT INTO notes (title, description, code_name) VALUES
   ('Main Project', 'Top-level project note', 'simple_done'),
-  ('Inbox', 'Temporary tasks and notes', NULL);
+  ('Inbox', 'Temporary tasks and notes', 'create_child');
 
 -- Sub-notes
 INSERT INTO notes (parent_id, title, description, code_name) VALUES
   (1, 'Design Phase', 'UI and UX work', NULL),
-  (1, 'Implementation Phase', 'Coding and testing', 'archive_old'),
+  (1, 'Implementation Phase', 'Coding and testing', 'create_child'),
   (2, 'Buy groceries', 'Milk, eggs, etc.', NULL);
 
 -- Attributes
