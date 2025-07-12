@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use crate::api::codes::{Action, FormContainer, FormType};
 use crate::api::notes::rocket_uri_macro_execute_action;
 use crate::db_manage::Note;
+use crate::frontend::codes::rocket_uri_macro_view_code;
 use crate::frontend::notes::rocket_uri_macro_edit_note;
 use crate::frontend::notes::rocket_uri_macro_new_note;
 use crate::frontend::notes::rocket_uri_macro_show_note;
@@ -53,8 +54,11 @@ pub fn render_note(
               a href=(uri!(show_note(id))) { "← Back to Parent" }
             }
             h3 style="margin-bottom: 1rem; margin-top: 1rem;" { (note.title) }
-            p style="color: var(--muted-color); font-size: 0.9em; margin-bottom: 0.5rem" {
-                "Code: " (note.code_name.clone().unwrap_or("NONE".to_string()))
+            //p style="color: var(--muted-color); font-size: 0.9em; margin-bottom: 0.5rem" {
+            @if let Some(code_name) = note.code_name.clone() {
+              a href={(uri!(view_code(code_name.clone())))} role="button" {
+                "Code: " (code_name.clone())
+              }
             }
             @for a in attributes {
                 p style="color: var(--muted-color); font-size: 0.9em; margin-bottom: 0.5rem" {

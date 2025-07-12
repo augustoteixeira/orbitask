@@ -1,4 +1,4 @@
-use crate::db_manage::codes::create_code;
+use crate::db_manage::codes::{create_code, edit_code};
 use chrono::NaiveDate;
 use rocket::form::Form;
 //use rocket::post;
@@ -6,6 +6,7 @@ use rocket::response::{Flash, Redirect};
 use rocket_db_pools::Connection;
 
 use crate::api::Authenticated;
+use rocket::uri;
 use rocket::{post, FromForm};
 //use crate::db_manage::{self};
 use crate::Db;
@@ -35,6 +36,33 @@ pub async fn create_code_submit(
         Err(e) => Err(Flash::error(
             Redirect::to("/codes/new"), // TODO use uri! macro
             format!("Failed to create code: {e}"),
+        )),
+    }
+}
+
+#[derive(FromForm)]
+pub struct EditCodeForm {
+    pub name: String, // Code to be updated
+    pub capabilities: String,
+    pub script: String,
+}
+
+#[post("/codes/edit", data = "<form>")]
+pub async fn edit_code_submit(
+    _auth: Authenticated,
+    mut db: Connection<Db>,
+    form: Form<EditCodeForm>,
+) -> Result<Flash<Redirect>, Flash<Redirect>> {
+    let EditCodeForm {
+        name,
+        capabilities,
+        script,
+    } = form.into_inner();
+    match edit_code(&mut db, &name, &capabilities, &script).await {
+        Ok(_) => Ok(Flash::success(Redirect::to("/"), "Code updated.")),
+        Err(e) => Err(Flash::error(
+            Redirect::to(uri!("/")), // Optionally redirect elsewhere
+            format!("Failed to update code: {e}"),
         )),
     }
 }

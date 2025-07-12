@@ -76,8 +76,31 @@ pub async fn get_code(
     .context(SqlxSnafu {
         task: "querying code",
     })?;
-
     Ok(code)
+}
+
+pub async fn edit_code(
+    db: &mut Connection<Db>,
+    name: &str,
+    new_capabilities: &str,
+    new_script: &str,
+) -> Result<(), DbError> {
+    sqlx::query(
+        r#"
+        UPDATE codes
+        SET capabilities = ?, script = ?
+        WHERE name = ?
+        "#,
+    )
+    .bind(new_capabilities)
+    .bind(new_script)
+    .bind(name)
+    .execute(&mut ***db)
+    .await
+    .context(SqlxSnafu {
+        task: "editing code",
+    })?;
+    Ok(())
 }
 
 pub async fn get_all_code_names(
@@ -161,7 +184,6 @@ fn within_range(
     id: i64,
     target_id: Option<i64>,
 ) -> bool {
-    println!("range: {range:?}, id: {id}, {target_id:?}");
     match range {
         Range::Own => matches!(Some(id), target_id),
     }
@@ -408,4 +430,24 @@ pub async fn execute_done(
         }
     }
     Ok("Note marked as done".to_string())
+}
+
+pub async fn get_code_by_name(
+    db: &mut Connection<Db>,
+    name: &str,
+) -> Result<Option<Code>, DbError> {
+    let code = sqlx::query_as::<_, Code>(
+        r#"
+        SELECT name, capabilities, script
+        FROM codes
+        WHERE name = ?
+        "#,
+    )
+    .bind(name)
+    .fetch_optional(&mut ***db)
+    .await
+    .context(SqlxSnafu {
+        task: "loading code by name",
+    })?;
+    Ok(code)
 }

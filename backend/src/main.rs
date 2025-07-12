@@ -49,11 +49,14 @@ async fn main() -> Result<(), Error> {
                 api::create_note_submit,
                 api::notes::execute_action,
                 api::codes::create_code_submit,
+                api::codes::edit_code_submit,
                 frontend::login::login,
                 frontend::notes::show_note,
                 frontend::notes::new_note,
                 frontend::notes::root_notes,
                 frontend::codes::new_code,
+                frontend::codes::edit_code,
+                frontend::codes::view_code,
             ],
         )
         .register("/", catchers![unauthorized])
