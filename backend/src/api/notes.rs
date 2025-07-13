@@ -6,9 +6,11 @@ use rocket_db_pools::Connection;
 use std::collections::HashMap;
 
 use crate::api::Authenticated;
+use crate::db_manage::attributes::{delete_attribute, set_attribute};
 use crate::db_manage::codes::{execute, get_forms, parse_fields};
 use crate::db_manage::notes::update_note;
 use crate::db_manage::{create_note, Db};
+use crate::frontend::notes::rocket_uri_macro_edit_note;
 use crate::frontend::notes::rocket_uri_macro_show_note;
 
 #[derive(FromForm)]
@@ -116,6 +118,7 @@ pub struct EditNoteForm {
     pub title: String,
     pub description: String,
     pub code_name: Option<String>,
+    pub attributes: Option<HashMap<String, String>>,
 }
 
 #[post("/notes/<id>/edit", data = "<form>")]
@@ -129,6 +132,7 @@ pub async fn edit_note_submit(
         title,
         description,
         code_name,
+        attributes,
     } = form.into_inner();
 
     let code_name = match code_name {
@@ -136,14 +140,76 @@ pub async fn edit_note_submit(
         other => other,
     };
 
-    match update_note(&mut db, id, title, description, code_name).await {
-        Ok(()) => Ok(Flash::success(
-            Redirect::to(uri!(crate::frontend::notes::show_note(id))),
-            "Note updated.",
+    if let Err(e) =
+        update_note(&mut db, id, title, description, code_name).await
+    {
+        return Err(Flash::error(
+            Redirect::to(uri!(crate::frontend::notes::edit_note(id))),
+            format!("Failed to update note: {e}"),
+        ));
+    }
+
+    if let Some(map) = attributes {
+        for (key, value) in map {
+            if let Err(e) = set_attribute(&mut db, id, &key, &value).await {
+                return Err(Flash::error(
+                    Redirect::to(uri!(edit_note(id))),
+                    format!("Failed to update attribute: {e}"),
+                ));
+            }
+        }
+    }
+    Ok(Flash::success(
+        Redirect::to(uri!(crate::frontend::notes::show_note(id))),
+        "Note updated.",
+    ))
+}
+
+#[post("/notes/<id>/attributes/<key>/delete")]
+pub async fn delete_attribute_submit(
+    id: i64,
+    key: &str,
+    _auth: crate::api::Authenticated,
+    mut db: Connection<Db>,
+) -> Result<Flash<Redirect>, Flash<Redirect>> {
+    match delete_attribute(&mut db, id, key).await {
+        Ok(_) => Ok(Flash::success(
+            Redirect::to(uri!(crate::frontend::notes::edit_note(id))),
+            format!("Attribute '{key}' deleted."),
         )),
         Err(e) => Err(Flash::error(
             Redirect::to(uri!(crate::frontend::notes::edit_note(id))),
-            format!("Failed to update note: {e}"),
+            format!("Failed to delete attribute '{key}': {e}"),
         )),
     }
+}
+
+#[derive(FromForm)]
+pub struct AttributeForm {
+    pub key: String,
+    pub value: String,
+}
+
+#[post("/notes/<id>/attributes/add", data = "<form>")]
+pub async fn update_or_add_attribute_submit(
+    id: i64,
+    _auth: crate::api::Authenticated,
+    mut db: Connection<Db>,
+    form: Form<AttributeForm>,
+) -> Result<Flash<Redirect>, Flash<Redirect>> {
+    let AttributeForm { key, value } = form.into_inner();
+
+    set_attribute(&mut db, id, &key, &value)
+        .await
+        .map_err(|e| {
+            Flash::error(
+                Redirect::to(uri!(crate::frontend::notes::edit_note(id))),
+                format!("Failed to set attribute: {e}"),
+            )
+        })?;
+
+    Ok(Flash::success(
+        Redirect::to(uri!(crate::frontend::notes::edit_note(id))),
+        "Attribute added or updated.",
+    ))
 }

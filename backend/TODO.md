@@ -4,6 +4,7 @@ Work sprint
 A) Editorial work
   - Delete notes
   - Functionality
+    - make the root display a tree of todos?
     - layout
       - make endpoints return enum implementing Responder
       - improve css
@@ -40,3 +41,5 @@ Improvements
 - Unify treatment of errors and redirects (redirect on error is not working)
 - Unify return errors to DbError (it often uses sqlx:Error)
 - make ui more compact, with all information
+- add logging
+- make font monospaced in code editor

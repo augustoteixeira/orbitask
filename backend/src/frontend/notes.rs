@@ -1,5 +1,4 @@
 use crate::db_manage::attributes::get_attributes;
-use crate::db_manage::codes::get_all_code_names;
 use crate::db_manage::codes::get_forms;
 use crate::db_manage::notes::update_note;
 use crate::db_manage::Db;
@@ -10,8 +9,11 @@ use rocket::response::{Flash, Redirect};
 use rocket::uri;
 use rocket_db_pools::Connection;
 
+use crate::api::notes::rocket_uri_macro_delete_attribute_submit;
 use crate::api::notes::rocket_uri_macro_edit_note_submit;
+use crate::api::notes::rocket_uri_macro_update_or_add_attribute_submit;
 use crate::api::Authenticated;
+use crate::db_manage::codes::get_all_code_names;
 use crate::db_manage::{get_child_notes, get_note, get_root_notes};
 use crate::frontend::render::{render_note, render_notes_grid};
 use crate::frontend::style::{base_flash, render, Page};
@@ -150,41 +152,65 @@ pub fn edit_note_form(
     desc_val: &str,
     code_val: &Option<String>,
     all_codes: &[String],
+    attributes: &Vec<(String, String)>,
 ) -> Markup {
     html! {
         main class="container" {
-            h1 { "Edit Note" }
+          h1 { "Edit Note" }
 
-            form method="post" action=(uri!(edit_note_submit(id))) {
-                label for="title" { "Title" }
-                input type="text" id="title" name="title" required value=(title_val);
 
-                label for="description" { "Description" }
-                textarea id="description" name="description" {
-                    (desc_val)
-                }
-
-                fieldset {
-                    legend { "Code" }
-
-                    label {
-                        input type="radio" name="code_name" value=""
-                            checked[code_val.is_none()];
-                        " No code"
-                    }
-
-                    @for code in all_codes {
-                        label {
-                            input type="radio" name="code_name" value=(code)
-                                checked[code_val.as_ref() == Some(code)];
-                            (code)
-                        }
-                    }
-                }
-
-                button type="submit" class="contrast" { "Save Changes" }
+          h3 { "Attributes" }
+          @for (key, value) in attributes {
+            div {
+              form method="post" action=(uri!(delete_attribute_submit(id, key))) {
+                label { (format!("{}: {}", key, value)) }
+                button type="submit" name="remove_attribute" value=(key) { "Remove" }
+              }
             }
+          }
+
+          div {
+              form method="post" action=(uri!(update_or_add_attribute_submit(id))) {
+                  label for="new_attr_key" { "New Attribute Key" }
+                  input type="text" id="new_attr_key" name="key" required;
+
+                  label for="new_attr_value" { "New Attribute Value" }
+                  input type="text" id="new_attr_value" name="value" required;
+
+                  button type="submit" { "Add Attribute" }
+              }
+          }
+
+          form method="post" action=(uri!(edit_note_submit(id))) {
+            label for="title" { "Title" }
+            input type="text" id="title" name="title" required value=(title_val);
+
+            label for="description" { "Description" }
+            textarea id="description" name="description" {
+                (desc_val)
+            }
+
+            fieldset {
+              legend { "Code" }
+
+              label {
+                input type="radio" name="code_name" value=""
+                  checked[code_val.is_none()];
+                " No code"
+              }
+
+              @for code in all_codes {
+                label {
+                  input type="radio" name="code_name" value=(code)
+                    checked[code_val.as_ref() == Some(code)];
+                  (code)
+                }
+              }
+            }
+
+          button type="submit" class="contrast" { "Save Changes" }
         }
+      }
     }
 }
 
@@ -195,9 +221,6 @@ pub async fn edit_note(
     id: i64,
     flash: Option<FlashMessage<'_>>,
 ) -> Result<Markup, Flash<Redirect>> {
-    use crate::db_manage::codes::get_all_code_names;
-    use crate::db_manage::notes::get_note;
-
     let note = get_note(&mut db, id)
         .await
         .map_err(|e| {
@@ -206,6 +229,8 @@ pub async fn edit_note(
         .ok_or_else(|| {
             Flash::error(Redirect::to(uri!(root_notes)), "Note not found")
         })?;
+
+    let attributes = get_attributes(&mut db, id).await.unwrap_or_default();
 
     let codes = get_all_code_names(&mut db).await.map_err(|e| {
         Flash::error(Redirect::to(uri!(root_notes)), format!("Error: {e}"))
@@ -217,6 +242,7 @@ pub async fn edit_note(
         &note.description,
         &note.code_name,
         &codes,
+        &attributes,
     );
 
     let page = Page {

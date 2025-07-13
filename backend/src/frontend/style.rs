@@ -1,5 +1,7 @@
+use crate::frontend::codes::rocket_uri_macro_list_codes;
 use maud::{html, Markup};
 use rocket::request::FlashMessage;
+use rocket::uri;
 
 pub struct Page {
     pub title: Markup,
@@ -66,6 +68,10 @@ pub fn header() -> maud::Markup {
         nav style=r#"display: flex; justify-content: space-between;
                      align-items: center;"# {
           h1 style=r#"margin-bottom: 0"# { "Orbitask" }
+
+          a href={(uri!(list_codes()))} role="button" {
+            "Codes"
+          }
 
           form method="post" action="/logout" style="margin-bottom: 0" {
             button type="submit" class="secondary"

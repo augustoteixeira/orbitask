@@ -51,6 +51,8 @@ async fn main() -> Result<(), Error> {
                 api::codes::create_code_submit,
                 api::codes::edit_code_submit,
                 api::notes::edit_note_submit,
+                api::notes::delete_attribute_submit,
+                api::notes::update_or_add_attribute_submit,
                 frontend::login::login,
                 frontend::notes::show_note,
                 frontend::notes::new_note,
@@ -59,6 +61,7 @@ async fn main() -> Result<(), Error> {
                 frontend::codes::new_code,
                 frontend::codes::edit_code,
                 frontend::codes::view_code,
+                frontend::codes::list_codes,
             ],
         )
         .register("/", catchers![unauthorized])

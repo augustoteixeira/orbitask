@@ -72,3 +72,19 @@ pub async fn get_attributes(
 
     Ok(result)
 }
+
+pub async fn delete_attribute(
+    db: &mut Connection<Db>,
+    note_id: i64,
+    key: &str,
+) -> Result<(), DbError> {
+    sqlx::query("DELETE FROM attributes WHERE note_id = ? AND key = ?")
+        .bind(note_id)
+        .bind(key)
+        .execute(&mut ***db)
+        .await
+        .context(SqlxSnafu {
+            task: "deleting attribute",
+        })?;
+    Ok(())
+}

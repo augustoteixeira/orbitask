@@ -149,3 +149,44 @@ pub async fn edit_code(
     };
     Ok(render(page))
 }
+
+#[get("/codes")]
+pub async fn list_codes(
+    _auth: Authenticated,
+    mut db: Connection<Db>,
+    flash: Option<FlashMessage<'_>>,
+) -> Result<Markup, Flash<Redirect>> {
+    let codes = crate::db_manage::codes::get_all_code_names(&mut db)
+        .await
+        .map_err(|e| {
+            Flash::error(Redirect::to("/"), format!("DB error: {e}"))
+        })?;
+
+    let contents = html! {
+        main class="container" {
+            h1 { "All Codes" }
+            ul {
+                @for name in codes {
+                    li {
+                        a href=(uri!(crate::frontend::codes::view_code(&name))) {
+                            (name)
+                        }
+                    }
+                }
+            }
+            nav style="margin-top: 1rem" {
+                a href=(uri!(crate::frontend::codes::new_code)) role="button" {
+                    "Create New Code"
+                }
+            }
+        }
+    };
+
+    let page = Page {
+        title: html! { title { "All Codes" } },
+        flash: base_flash(flash),
+        contents,
+    };
+
+    Ok(render(page))
+}

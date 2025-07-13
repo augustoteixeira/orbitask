@@ -56,7 +56,7 @@ pub fn render_note(
             h3 style="margin-bottom: 1rem; margin-top: 1rem;" { (note.title) }
             //p style="color: var(--muted-color); font-size: 0.9em; margin-bottom: 0.5rem" {
             @if let Some(code_name) = note.code_name.clone() {
-              a href={(uri!(view_code(code_name.clone())))} role="button" {
+              a href={(uri!(view_code(code_name.clone())))} {
                 "Code: " (code_name.clone())
               }
             }
