@@ -131,6 +131,11 @@ pub async fn edit_note_submit(
         code_name,
     } = form.into_inner();
 
+    let code_name = match code_name {
+        Some(s) if s.trim().is_empty() => None,
+        other => other,
+    };
+
     match update_note(&mut db, id, title, description, code_name).await {
         Ok(()) => Ok(Flash::success(
             Redirect::to(uri!(crate::frontend::notes::show_note(id))),

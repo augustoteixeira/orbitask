@@ -79,7 +79,7 @@ pub async fn edit_code_submit(
 pub enum FormType {
     UInt,
     Date,
-    // Empty,
+    Empty,
     // Struct(StuctType)
     // Enum(EnumType)
 }
@@ -117,4 +117,5 @@ impl Serialize for Date {
 pub enum Value {
     UInt(u64),
     Date(Date),
+    Empty,
 }

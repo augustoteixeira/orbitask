@@ -2,6 +2,7 @@ Work sprint
 -----------
 
 A) Editorial work
+  - Delete notes
   - Functionality
     - layout
       - make endpoints return enum implementing Responder
@@ -20,7 +21,6 @@ Features
     - add db_function to call expired alarms (and add to all endpoints, including "/")
     - build watchdog
 - Frontend
-  - * edit note
   - delete note
   - hide or change the apperence of done notes
   - breadcrumbs for ancestors
@@ -29,6 +29,8 @@ Features
 Improvements
 ------------
 
+- make flash messages be a vector or json values
+- implement lua effect to append a flash message
 - make html pretty: https://github.com/servo/html5ever/blob/main/rcdom/examples/print-rcdom.rs
 - make all endpoints return a single enum that implements Responder.
 - make tests call the handler directly (instead of calling an endpoint) through Client (these tests look more like unit tests afterall).

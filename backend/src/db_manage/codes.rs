@@ -137,6 +137,7 @@ pub fn parse_fields(
                 .map(|d| Value::Date(Date(d)))
                 .map_err(|e| format!("Invalid date: {e}").into())
         }
+        FormType::Empty => Ok(Value::Empty),
     }
 }
 

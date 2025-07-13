@@ -121,6 +121,13 @@ pub fn render_form(note_id: i64, action: &Action, prefix: String) -> Markup {
             button type="submit" { "Execute" }
           }
         },
+        FormType::Empty => html! {
+          form method="post" action=(uri!(execute_action(note_id))) {
+            input type="hidden" name="action_label" value=(prefix);
+
+            button type="submit" { "Execute" }
+          }
+        },
     };
     html! {
         (form)
