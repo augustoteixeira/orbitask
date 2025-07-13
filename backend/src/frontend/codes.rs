@@ -117,7 +117,7 @@ pub fn edit_code_form(code: &Code) -> Markup {
                 name="capabilities" required value=(code.capabilities);
 
           label for="script" { "Script" }
-          textarea id="script" name="script" {
+          textarea id="script" name="script" rows="50" {
               (code.script)
           }
 
