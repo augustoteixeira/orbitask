@@ -7,7 +7,8 @@ use crate::frontend::codes::rocket_uri_macro_view_code;
 use crate::frontend::notes::rocket_uri_macro_edit_note;
 use crate::frontend::notes::rocket_uri_macro_new_note;
 use crate::frontend::notes::rocket_uri_macro_show_note;
-use maud::{html, Markup};
+use markdown;
+use maud::{html, Markup, PreEscaped};
 use rocket::uri;
 
 pub fn render_notes_grid(notes: &Vec<Note>) -> Markup {
@@ -25,7 +26,7 @@ pub fn render_notes_grid(notes: &Vec<Note>) -> Markup {
               (note.title)
             }
             p style="font-size: 0.8em; color: var(--muted-color); margin-bottom: 0.2rem" {
-              (note.description)
+              (PreEscaped(markdown::to_html(&note.description)))
             }
             @if let Some(code) = &note.code_name {
               p style="font-size: 0.75em; color: var(--muted-color); font-style: italic; margin-bottom: 0.2rem" {
@@ -69,7 +70,8 @@ pub fn render_note(
           padding: 1rem; border: 1px solid var(--muted-border);
           border-radius: 0.5rem; margin: 0.5rem; padding: 0.5rem
         "# {
-              p style="margin-bottom: 0.2rem" { (note.description) }
+              p style="margin-bottom: 0.2rem"
+              { (PreEscaped(markdown::to_html(&note.description))) }
             }
             (render_forms(note.id, forms))
             a href={(uri!(new_note(parent_id = Some(note.id))))} role="button" {

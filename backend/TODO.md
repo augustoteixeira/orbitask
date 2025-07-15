@@ -37,7 +37,6 @@ Improvements
 - create a way to fix the order of the form actions. Currently it is random.
 - make flash messages be a vector or json values
 - infer missing capabilities automatically and suggest their inclusion with an orange flash card once a code is saved.
-- parse the description of a note as markdown and render it appropriately
 
 
 

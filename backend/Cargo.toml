@@ -7,6 +7,7 @@ edition = "2024"
 base64 = "0.22.1"
 bcrypt = "0.17.0"
 chrono = "0.4.41"
+markdown = "1.0.0"
 maud = { version = "0.27.0", features = ["rocket"] }
 mlua = { version = "0.10.5", features = ["luau", "async", "serialize", "send"] }
 rand = "0.9.1"
