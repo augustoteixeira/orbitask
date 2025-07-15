@@ -1,4 +1,5 @@
 use crate::frontend::codes::rocket_uri_macro_list_codes;
+use crate::frontend::notes::rocket_uri_macro_root_notes;
 use maud::{html, Markup};
 use rocket::request::FlashMessage;
 use rocket::uri;
@@ -71,6 +72,9 @@ pub fn header() -> maud::Markup {
 
           a href={(uri!(list_codes()))} role="button" {
             "Codes"
+          }
+          a href={(uri!(root_notes()))} role="button" {
+            "Notes"
           }
 
           form method="post" action="/logout" style="margin-bottom: 0" {

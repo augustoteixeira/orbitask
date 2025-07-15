@@ -156,30 +156,13 @@ pub fn edit_note_form(
 ) -> Markup {
     html! {
         main class="container" {
+
+          a href={(uri!(show_note(id)))} role="button" {
+            "Back to note"
+          }
+
           h1 { "Edit Note" }
 
-
-          h3 { "Attributes" }
-          @for (key, value) in attributes {
-            div {
-              form method="post" action=(uri!(delete_attribute_submit(id, key))) {
-                label { (format!("{}: {}", key, value)) }
-                button type="submit" name="remove_attribute" value=(key) { "Remove" }
-              }
-            }
-          }
-
-          div {
-              form method="post" action=(uri!(update_or_add_attribute_submit(id))) {
-                  label for="new_attr_key" { "New Attribute Key" }
-                  input type="text" id="new_attr_key" name="key" required;
-
-                  label for="new_attr_value" { "New Attribute Value" }
-                  input type="text" id="new_attr_value" name="value" required;
-
-                  button type="submit" { "Add Attribute" }
-              }
-          }
 
           form method="post" action=(uri!(edit_note_submit(id))) {
             label for="title" { "Title" }
@@ -209,6 +192,30 @@ pub fn edit_note_form(
             }
 
           button type="submit" class="contrast" { "Save Changes" }
+        }
+
+
+        h3 { "Attributes" }
+
+        @for (key, value) in attributes {
+          div {
+            form method="post" action=(uri!(delete_attribute_submit(id, key))) {
+              label { (format!("{}: {}", key, value)) }
+              button type="submit" name="remove_attribute" value=(key) { "Remove" }
+            }
+          }
+        }
+
+        div {
+          form method="post" action=(uri!(update_or_add_attribute_submit(id))) {
+            label for="new_attr_key" { "New Attribute Key" }
+            input type="text" id="new_attr_key" name="key" required;
+
+            label for="new_attr_value" { "New Attribute Value" }
+            input type="text" id="new_attr_value" name="value" required;
+
+            button type="submit" { "Add Attribute" }
+          }
         }
       }
     }
