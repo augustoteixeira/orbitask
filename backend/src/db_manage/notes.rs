@@ -101,12 +101,13 @@ pub async fn get_all_notes(
     db: &mut Connection<Db>,
 ) -> Result<Vec<Note>, DbError> {
     let notes = sqlx::query_as::<_, Note>(
-        "SELECT id, parent_id, title, description, code_name FROM notes ORDER BY id"
+        r#"SELECT id, parent_id, title, description, code_name
+           FROM notes ORDER BY id"#,
     )
     .fetch_all(&mut ***db)
     .await
     .context(SqlxSnafu {
-        task: "getting all notes"
+        task: "getting all notes",
     })?;
 
     Ok(notes)
@@ -172,3 +173,5 @@ pub async fn get_ancestors(
 
     Ok(ancestors)
 }
+
+// Write function to delete notes AI!
