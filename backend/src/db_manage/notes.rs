@@ -97,6 +97,8 @@ pub async fn get_root_notes(
     Ok(notes)
 }
 
+// Write a function to get all notes AI!
+
 pub async fn update_note(
     db: &mut Connection<Db>,
     note_id: i64,
