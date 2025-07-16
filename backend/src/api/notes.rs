@@ -213,3 +213,5 @@ pub async fn update_or_add_attribute_submit(
         "Attribute added or updated.",
     ))
 }
+
+// Add an api endpoint to delete notes AI!
