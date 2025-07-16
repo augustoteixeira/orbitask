@@ -272,4 +272,34 @@ pub async fn edit_note(
     Ok(render(page))
 }
 
-// AI: Add an endpoint to confirm the deletion of a note
+#[get("/notes/<id>/delete/confirm")]
+pub async fn delete_note_confirm(
+    _auth: Authenticated,
+    id: i64,
+    flash: Option<FlashMessage<'_>>,
+    mut db: Connection<Db>,
+) -> Result<Markup, Flash<Redirect>> {
+    let note = match crate::db_manage::notes::get_note(&mut db, id).await {
+        Ok(Some(note)) => note,
+        _ => return Err(Flash::error(Redirect::to("/"), "Note not found.")),
+    };
+
+    let contents = html! {
+        main class="container" {
+            h1 { "Confirm Delete Note" }
+            p { "Are you sure you want to delete the note: " (note.title) "?" }
+            form method="post" action=(uri!(crate::api::notes::delete_note_submit(id))) {
+                button type="submit" { "Yes, delete" }
+            }
+            a href=(uri!(show_note(id))) { "Cancel" }
+        }
+    };
+
+    let page = crate::frontend::style::Page {
+        title: html! { title { "Confirm Delete" } },
+        flash: crate::frontend::style::base_flash(flash),
+        contents,
+    };
+
+    Ok(crate::frontend::render::render(page))
+}
