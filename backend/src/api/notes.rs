@@ -214,4 +214,20 @@ pub async fn update_or_add_attribute_submit(
     ))
 }
 
-// Add an api endpoint to delete notes AI!
+#[post("/notes/<id>/delete")]
+pub async fn delete_note_submit(
+    _auth: crate::api::Authenticated,
+    mut db: Connection<Db>,
+    id: i64,
+) -> Result<Flash<Redirect>, Flash<Redirect>> {
+    match crate::db_manage::notes::delete_note(&mut db, id).await {
+        Ok(_) => Ok(Flash::success(
+            Redirect::to("/"),
+            "Note deleted successfully."
+        )),
+        Err(e) => Err(Flash::error(
+            Redirect::to(uri!(crate::frontend::notes::edit_note(id))),
+            format!("Failed to delete note: {e}")
+        )),
+    }
+}
