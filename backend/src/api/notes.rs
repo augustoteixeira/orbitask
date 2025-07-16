@@ -222,12 +222,12 @@ pub async fn delete_note_submit(
 ) -> Result<Flash<Redirect>, Flash<Redirect>> {
     match crate::db_manage::notes::delete_note(&mut db, id).await {
         Ok(_) => Ok(Flash::success(
-            Redirect::to("/"),
-            "Note deleted successfully."
+            Redirect::to("/"), // make this redirect to parent AI!
+            "Note deleted successfully.",
         )),
         Err(e) => Err(Flash::error(
             Redirect::to(uri!(crate::frontend::notes::edit_note(id))),
-            format!("Failed to delete note: {e}")
+            format!("Failed to delete note: {e}"),
         )),
     }
 }
