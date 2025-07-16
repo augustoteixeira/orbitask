@@ -271,3 +271,5 @@ pub async fn edit_note(
 
     Ok(render(page))
 }
+
+// AI: Add an endpoint to confirm the deletion of a note

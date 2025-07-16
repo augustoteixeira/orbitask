@@ -92,6 +92,7 @@ pub fn render_note(
             @for l in logs {
                 p style="color: var(--muted-color); font-size: 0.9em;" { (l) }
             }
+            // Add a delete button. It should forward the user to the confirmation page AI!
           }
     }
 }
