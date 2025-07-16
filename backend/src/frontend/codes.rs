@@ -1,4 +1,6 @@
+use crate::api::codes::rocket_uri_macro_edit_code_submit;
 use crate::frontend::notes::rocket_uri_macro_root_notes;
+use crate::frontend::notes::rocket_uri_macro_show_note;
 use crate::{
     api::Authenticated,
     db_manage::{codes::Code, Db},
@@ -14,11 +16,12 @@ use rocket_db_pools::Connection;
 
 use super::style::{base_flash, render, Page};
 
-#[get("/codes/<name>")]
+#[get("/codes/<name>?<note>")]
 pub async fn view_code(
     _auth: Authenticated,
     mut db: Connection<Db>,
     name: String,
+    note: Option<String>,
     flash: Option<FlashMessage<'_>>,
 ) -> Result<Markup, Flash<Redirect>> {
     use crate::db_manage::codes::get_code_by_name;
@@ -33,6 +36,8 @@ pub async fn view_code(
         })?
         .ok_or_else(|| Flash::error(Redirect::to("/"), "Code not found"))?;
 
+    let next: Option<String> =
+        note.map(|id| uri!(show_note(id.parse::<i64>().unwrap())).to_string());
     let contents = html! {
         main class="container" {
             h1 { "Code Details" }
@@ -46,7 +51,9 @@ pub async fn view_code(
             }
 
             nav style="margin-top: 1rem" {
-                a href=(uri!(edit_code(name = code.name.clone()))) role="button" {
+                a href=(uri!(edit_code(name = code.name.clone(),
+                                       next = next)
+                )) role="button" {
                     "Edit Code"
                 }
             }
@@ -102,12 +109,13 @@ pub async fn new_code(
     Ok(render(page))
 }
 
-pub fn edit_code_form(code: &Code) -> Markup {
+pub fn edit_code_form(code: &Code, next_url: Option<String>) -> Markup {
     html! {
       main class="container" {
         h1 { "Edit Code" }
 
-        form method="post" action="/codes/edit" {
+        form method="post"
+             action=(uri!(edit_code_submit(next=next_url))) {
           input type="hidden" name="name" value=(code.name);
 
           label for="capabilities" {
@@ -127,11 +135,12 @@ pub fn edit_code_form(code: &Code) -> Markup {
     }
 }
 
-#[get("/codes/<name>/edit")]
+#[get("/codes/<name>/edit?<next>")]
 pub async fn edit_code(
     _auth: Authenticated,
     mut db: Connection<Db>,
     name: String,
+    next: Option<String>,
     flash: Option<FlashMessage<'_>>,
 ) -> Result<Markup, Flash<Redirect>> {
     use crate::db_manage::codes::get_code_by_name; // You may need a simple `get_code_by_name`
@@ -141,7 +150,7 @@ pub async fn edit_code(
         .map_err(|e| Flash::error(Redirect::to("/"), format!("DB error: {e}")))?
         .ok_or_else(|| Flash::error(Redirect::to("/"), "Code not found"))?;
 
-    let contents = edit_code_form(&code);
+    let contents = edit_code_form(&code, Some("/notes/1".to_string()));
     let page = Page {
         title: html! { title { "Edit Code" } },
         flash: base_flash(flash),
@@ -162,13 +171,14 @@ pub async fn list_codes(
             Flash::error(Redirect::to("/"), format!("DB error: {e}"))
         })?;
 
+    let no_note = Option::<String>::None;
     let contents = html! {
         main class="container" {
             h1 { "All Codes" }
             ul {
                 @for name in codes {
                     li {
-                        a href=(uri!(crate::frontend::codes::view_code(&name))) {
+                        a href=(uri!(crate::frontend::codes::view_code(name=&name, note=no_note.clone()))) {
                             (name)
                         }
                     }

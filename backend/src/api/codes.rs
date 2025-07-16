@@ -47,11 +47,12 @@ pub struct EditCodeForm {
     pub script: String,
 }
 
-#[post("/codes/edit", data = "<form>")]
+#[post("/codes/edit?<next>", data = "<form>")]
 pub async fn edit_code_submit(
     _auth: Authenticated,
     mut db: Connection<Db>,
     form: Form<EditCodeForm>,
+    next: Option<String>,
 ) -> Result<Flash<Redirect>, Flash<Redirect>> {
     let EditCodeForm {
         name,
@@ -59,7 +60,10 @@ pub async fn edit_code_submit(
         script,
     } = form.into_inner();
     match edit_code(&mut db, &name, &capabilities, &script).await {
-        Ok(_) => Ok(Flash::success(Redirect::to("/"), "Code updated.")),
+        Ok(_) => match next {
+            None => Ok(Flash::success(Redirect::to("/"), "Code updated.")),
+            Some(s) => Ok(Flash::success(Redirect::to(s), "Code updated.")),
+        },
         Err(e) => Err(Flash::error(
             Redirect::to(uri!("/")), // Optionally redirect elsewhere
             format!("Failed to update code: {e}"),

@@ -32,7 +32,6 @@ Improvements
 
 - make an import system for one script to `requre` another in the sql database.
 - make a lua library that exports functions to make it easier to call effects. For example: `log("hi")` would yield the necessary `SysLog` object.
-- add `next` parameter to the `view_code` and `edit_code` endpoints. This would make it easier to go from a note, to its code, edit and return to the initial note.
 - make execution of a note atomic from the sql perspective. We start a transaction at the start of the execution and end it later. In case there is a bug at the lua code, the execution will have no side effects.
 - create a way to fix the order of the form actions. Currently it is random.
 - make flash messages be a vector or json values
