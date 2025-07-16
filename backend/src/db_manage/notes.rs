@@ -174,4 +174,22 @@ pub async fn get_ancestors(
     Ok(ancestors)
 }
 
-// Write function to delete notes AI!
+pub async fn delete_note(
+    db: &mut Connection<Db>,
+    note_id: i64,
+) -> Result<(), DbError> {
+    sqlx::query(
+        r#"
+        DELETE FROM notes
+        WHERE id = ?
+        "#
+    )
+    .bind(note_id)
+    .execute(&mut ***db)
+    .await
+    .context(SqlxSnafu {
+        task: "deleting note",
+    })?;
+
+    Ok(())
+}
