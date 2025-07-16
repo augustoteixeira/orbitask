@@ -44,16 +44,22 @@ pub fn render_note(
     attributes: &Vec<(String, String)>,
     forms: &HashMap<String, FormContainer>,
     child_notes: &Vec<Note>,
+    ancestors: &Vec<(i64, String)>,
     logs: &Vec<String>,
 ) -> Markup {
     let rendered_children = render_notes_grid(child_notes);
     html! {
           main class="container" {
-            a href="/" { "← Back to Notes" }
-            @if let Some(id) = note.parent_id {
-              br;
-              a href=(uri!(show_note(id))) { "← Back to Parent" }
+            nav class="breadcrumb" style="justify-content: flex-start" {
+              a href="/" { "Home" }
+              @for (id, title) in ancestors {
+                span style="margin-left: 0.4rem; margin-right: 0.4rem" { " / " }
+                a href=(uri!(show_note(*id))) { (title) }
+              }
+              span style="margin-left: 0.4rem; margin-right: 0.4rem" { " / " }
+              span { (note.title.clone()) }
             }
+
             h3 style="margin-bottom: 1rem; margin-top: 1rem;" { (note.title) }
             //p style="color: var(--muted-color); font-size: 0.9em; margin-bottom: 0.5rem" {
             @if let Some(code_name) = note.code_name.clone() {

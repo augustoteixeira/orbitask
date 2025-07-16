@@ -24,7 +24,6 @@ Features
 - Frontend
   - delete note
   - hide or change the apperence of done notes
-  - breadcrumbs for ancestors
 - Coding
 
 Improvements

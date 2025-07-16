@@ -123,3 +123,37 @@ pub async fn update_note(
 
     Ok(())
 }
+
+pub async fn get_ancestors(
+    db: &mut Connection<Db>,
+    id: i64,
+) -> Result<Vec<(i64, String)>, DbError> {
+    let ancestors = sqlx::query_as::<_, (i64, String)>(
+        r#"
+        WITH RECURSIVE ancestors(id, title, parent_id, depth) AS (
+            SELECT id, title, parent_id, 0
+            FROM notes
+            WHERE id = ?
+
+            UNION ALL
+
+            SELECT n.id, n.title, n.parent_id, a.depth + 1
+            FROM notes n
+            JOIN ancestors a ON n.id = a.parent_id
+        )
+        SELECT id, title
+        FROM ancestors
+        WHERE id != ?
+        ORDER BY depth DESC;
+        "#,
+    )
+    .bind(id)
+    .bind(id)
+    .fetch_all(&mut ***db)
+    .await
+    .context(SqlxSnafu {
+        task: "getting ancestors for breadcrumb",
+    })?;
+
+    Ok(ancestors)
+}

@@ -1,6 +1,6 @@
 use crate::db_manage::attributes::get_attributes;
 use crate::db_manage::codes::get_forms;
-use crate::db_manage::notes::update_note;
+use crate::db_manage::notes::{get_ancestors, update_note};
 use crate::db_manage::Db;
 use maud::{html, Markup};
 use rocket::get;
@@ -73,7 +73,18 @@ pub async fn show_note(
         Flash::error(Redirect::to("/"), format!("Failed to load forms: {e}"))
     })?;
 
-    let contents = render_note(&note, &attributes, &forms, &child_notes, &logs);
+    let ancestors = get_ancestors(&mut db, id).await.map_err(|e| {
+        Flash::error(Redirect::to("/"), format!("Failed to get ancestors: {e}"))
+    })?;
+
+    let contents = render_note(
+        &note,
+        &attributes,
+        &forms,
+        &child_notes,
+        &ancestors,
+        &logs,
+    );
 
     let page = Page {
         title: html! { title { (note.title) } },
