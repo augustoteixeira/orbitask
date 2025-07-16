@@ -97,7 +97,20 @@ pub async fn get_root_notes(
     Ok(notes)
 }
 
-// Write a function to get all notes AI!
+pub async fn get_all_notes(
+    db: &mut Connection<Db>,
+) -> Result<Vec<Note>, DbError> {
+    let notes = sqlx::query_as::<_, Note>(
+        "SELECT id, parent_id, title, description, code_name FROM notes ORDER BY id"
+    )
+    .fetch_all(&mut ***db)
+    .await
+    .context(SqlxSnafu {
+        task: "getting all notes"
+    })?;
+
+    Ok(notes)
+}
 
 pub async fn update_note(
     db: &mut Connection<Db>,
