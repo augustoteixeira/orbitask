@@ -2,7 +2,6 @@ Work sprint
 -----------
 
 A) Editorial work
-  - Delete notes
   - Functionality
     - make the root display a tree of todos?
     - layout
