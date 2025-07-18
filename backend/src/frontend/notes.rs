@@ -301,5 +301,5 @@ pub async fn delete_note_confirm(
         contents,
     };
 
-    Ok(crate::frontend::render::render(page))
+    Ok(render(page))
 }
