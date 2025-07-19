@@ -1,7 +1,6 @@
-use maud::{html, Markup};
+use maud::html;
 
-use super::style::{base_flash, footer, meta};
-use super::view::{View, ViewState};
+use super::view::{MyFlash, View, ViewState};
 use rocket::get;
 use rocket::request::FlashMessage;
 
@@ -9,6 +8,6 @@ use rocket::request::FlashMessage;
 pub async fn login(flash: Option<FlashMessage<'_>>) -> View {
     return View {
         state: ViewState::Login,
-        flash: Vec::new(),
+        flash: flash.into_iter().map(MyFlash::from).collect(),
     };
 }

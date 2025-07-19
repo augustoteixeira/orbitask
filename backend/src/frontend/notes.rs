@@ -18,12 +18,15 @@ use crate::db_manage::{get_child_notes, get_note, get_root_notes};
 use crate::frontend::render::{render_note, render_notes_grid};
 use crate::frontend::style::{base_flash, render, Page};
 
+use super::view::{MyFlash, View, ViewState};
+
 #[get("/")]
 pub async fn root_notes(
     flash: Option<FlashMessage<'_>>,
     _auth: Authenticated,
     mut db: Connection<Db>,
-) -> Result<Markup, Flash<Redirect>> {
+) -> View {
+    //{Result<Markup, Flash<Redirect>> {
     let notes = get_root_notes(&mut db).await.unwrap_or_default();
     let contents = html! {
       main {
@@ -34,12 +37,16 @@ pub async fn root_notes(
         }
       }
     };
-    let page = Page {
-        title: html! {title {"Notes"}},
-        flash: base_flash(flash),
-        contents,
+    //let page = Page {
+    //    title: html! {title {"Notes"}},
+    //    flash: base_flash(flash),
+    //    contents,
+    //};
+    //Ok(render(page))
+    return View {
+        state: ViewState::Root(notes),
+        flash: flash.into_iter().map(MyFlash::from).collect(),
     };
-    Ok(render(page))
 }
 
 #[get("/notes/<id>")]

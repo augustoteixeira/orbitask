@@ -24,6 +24,7 @@ pub fn render(page: Page) -> Markup {
           // Pico.css CDN
           link rel="stylesheet"
                href="https://unpkg.com/@picocss/pico@1.5.10/css/pico.min.css";
+          link rel="stylesheet" href="/static/style.css";
           link rel="icon" type="image/x-icon" href="/static/favicon.png";
           // Optional custom styles
           //link rel="stylesheet" href="/static/style.css";
