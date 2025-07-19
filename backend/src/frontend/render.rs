@@ -13,25 +13,19 @@ use rocket::uri;
 
 pub fn render_notes_grid(notes: &Vec<Note>) -> Markup {
     html! {
-      section style=r#"
-        display: grid; gap: 1rem;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      "# {
+      section class="note-grid" {
         @for note in notes {
-          article style=r#"
-            padding: 1rem; border: 1px solid var(--muted-border);
-            border-radius: 0.5rem; margin: 0.5rem;
-          "# {
-            a href={(format!("/notes/{}", note.id))} {
-              (note.title)
-            }
-            p style="font-size: 0.8em; color: var(--muted-color); margin-bottom: 0.2rem" {
-              (PreEscaped(markdown::to_html(&note.description)))
-            }
-            @if let Some(code) = &note.code_name {
-              p style="font-size: 0.75em; color: var(--muted-color); font-style: italic; margin-bottom: 0.2rem" {
-                "Script: " (code)
+          article class="note-article" {
+            div class="note-article-title" {
+              a href={(format!("/notes/{}", note.id))} { // TODO: use uri
+                (note.title)
               }
+              @if let Some(code) = &note.code_name {
+                p class="badge" { (code) }
+              }
+            }
+            p {
+              (PreEscaped(markdown::to_html(&note.description)))
             }
           }
         }
