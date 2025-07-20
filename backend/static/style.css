@@ -42,7 +42,11 @@ h3 { font-size: 28px; }
 h4 { font-size: 28px; }
 h5 { font-size: 28px; }
 h6 { font-size: 24px; }
-p, a, button, span, [role=button] { font-size: calc(1.5rem + 0.2vw); }
+p, a, button, span, code, [role=button] { font-size: calc(1.5rem + 0.2vw); }
+
+pre {
+    margin-bottom: 3rem;
+}
 
 button, [role=button] {
     padding: 0.5rem 1rem;

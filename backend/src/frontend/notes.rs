@@ -69,15 +69,7 @@ pub async fn show_note(
         Flash::error(Redirect::to("/"), format!("Failed to get ancestors: {e}"))
     })?;
 
-    let contents = render_note(
-        &note,
-        &attributes,
-        &forms,
-        &child_notes,
-        &ancestors,
-        &logs,
-    );
-    return Ok(View {
+    Ok(View {
         state: ViewState::Note(
             note,
             attributes,
@@ -87,14 +79,7 @@ pub async fn show_note(
             logs,
         ),
         flash: flash.into_iter().map(MyFlash::from).collect(),
-    });
-
-    let page = Page {
-        title: html! { title { (note.title) } },
-        flash: base_flash(flash),
-        contents,
-    };
-    //Ok(render(page))
+    })
 }
 
 pub fn new_note_form(codes: Vec<String>, parent_id: Option<i64>) -> Markup {

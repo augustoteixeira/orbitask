@@ -6,10 +6,11 @@ use rocket::uri;
 use rocket::{Request, Response};
 use std::collections::HashMap;
 
+use crate::db_manage::codes::Code;
 use crate::db_manage::Note;
+use crate::frontend::codes::rocket_uri_macro_edit_code;
 use crate::frontend::codes::rocket_uri_macro_list_codes;
 use crate::frontend::notes::rocket_uri_macro_root_notes;
-//use crate::frontend::render::render_notes_grid;
 use crate::frontend::style::{base_flash, footer, meta};
 
 use super::render::render_note;
@@ -55,6 +56,7 @@ pub enum ViewState {
         Vec<(i64, String)>,
         Vec<String>,
     ),
+    Code(Code, Option<String>),
 }
 
 #[derive(Debug)]
@@ -189,6 +191,33 @@ pub fn render_notes_grid(notes: &Vec<Note>) -> Markup {
     }
 }
 
+fn render_code(code: Code, next: Option<String>) -> Markup {
+    html! {
+        main class="container" {
+            h1 { "Code Details" }
+
+            div class="attribute-container" {
+              p class="badge" { (code.name.clone()) }
+            }
+
+            h2 { "Capabilities" }
+
+            code { (code.capabilities.clone()) }
+
+            h2 { "Script" }
+
+            pre { code { (code.script.clone()) } }
+
+            nav style="margin-top: 1rem" {
+                a href=(uri!(edit_code(name = code.name.clone(), next = next)
+                )) role="button" {
+                    "Edit Code"
+                }
+            }
+        }
+    }
+}
+
 impl<'r> Responder<'r, 'static> for View {
     fn respond_to(self, req: &'r Request<'_>) -> Result<'static> {
         let main = match self.state {
@@ -209,6 +238,7 @@ impl<'r> Responder<'r, 'static> for View {
                 &ancestors,
                 &logs,
             ),
+            ViewState::Code(code, next) => render_code(code, next),
         };
         let rendered_flash = render_flashes(self.flash);
         let markup = html! {

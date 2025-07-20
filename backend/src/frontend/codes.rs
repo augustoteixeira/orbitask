@@ -15,6 +15,7 @@ use rocket::{
 use rocket_db_pools::Connection;
 
 use super::style::{base_flash, render, Page};
+use crate::frontend::view::{MyFlash, View, ViewState};
 
 #[get("/codes/<name>?<note>")]
 pub async fn view_code(
@@ -23,7 +24,7 @@ pub async fn view_code(
     name: String,
     note: Option<String>,
     flash: Option<FlashMessage<'_>>,
-) -> Result<Markup, Flash<Redirect>> {
+) -> Result<View, Flash<Redirect>> {
     use crate::db_manage::codes::get_code_by_name;
 
     let code = get_code_by_name(&mut db, &name)
@@ -38,35 +39,11 @@ pub async fn view_code(
 
     let next: Option<String> =
         note.map(|id| uri!(show_note(id.parse::<i64>().unwrap())).to_string());
-    let contents = html! {
-        main class="container" {
-            h1 { "Code Details" }
 
-            p { strong { "Name:" } " " (code.name.clone()) }
-            p { strong { "Capabilities:" } " " (code.capabilities.clone()) }
-
-            h2 { "Script" }
-            pre {
-                code { (code.script.clone()) }
-            }
-
-            nav style="margin-top: 1rem" {
-                a href=(uri!(edit_code(name = code.name.clone(),
-                                       next = next)
-                )) role="button" {
-                    "Edit Code"
-                }
-            }
-        }
-    };
-
-    let page = Page {
-        title: html! { title { "View Code" } },
-        flash: base_flash(flash),
-        contents,
-    };
-
-    Ok(render(page))
+    Ok(View {
+        state: ViewState::Code(code, next),
+        flash: flash.into_iter().map(MyFlash::from).collect(),
+    })
 }
 
 pub fn new_code_form() -> Markup {
