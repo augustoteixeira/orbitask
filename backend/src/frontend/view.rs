@@ -63,6 +63,7 @@ pub enum ViewState {
     ),
     NoteEdit(i64, Note, Vec<String>, Vec<(String, String)>),
     Code(Code, Option<String>),
+    CodeList(Vec<String>, Option<String>),
     CodeNew(),
     CodeEdit(Code, Option<String>),
 }
@@ -336,6 +337,31 @@ pub fn render_edit_note(
     }
 }
 
+pub fn render_list_codes(
+    codes: &Vec<String>,
+    no_note: &Option<String>,
+) -> Markup {
+    html! {
+        main class="container" {
+            h1 { "All Codes" }
+            ul {
+                @for name in codes {
+                    li {
+                        a href=(uri!(crate::frontend::codes::view_code(name=&name.clone(), note=no_note.clone()))) {
+                            (name)
+                        }
+                    }
+                }
+            }
+            nav style="margin-top: 1rem" {
+                a href=(uri!(crate::frontend::codes::new_code)) role="button" {
+                    "Create New Code"
+                }
+            }
+        }
+    }
+}
+
 impl<'r> Responder<'r, 'static> for View {
     fn respond_to(self, req: &'r Request<'_>) -> Result<'static> {
         let main = match self.state {
@@ -360,15 +386,13 @@ impl<'r> Responder<'r, 'static> for View {
                 render_edit_note(id, &note, &all_codes, &attributes)
             }
             ViewState::Code(code, next) => render_code(code, next),
+            ViewState::CodeList(codes, no_note) => {
+                render_list_codes(&codes, &no_note)
+            }
             ViewState::CodeNew() => render_new_code(),
             ViewState::CodeEdit(code, next) => render_edit_code(&code, next),
         };
         let rendered_flash = render_flashes(self.flash);
-        let markup = html! {
-            (rendered_flash)
-            (main)
-        };
-        //markup.respond_to(req)
         let page = Page {
             title: html! {title {"Notes"}},
             flash: rendered_flash,
