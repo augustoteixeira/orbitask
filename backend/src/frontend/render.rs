@@ -7,31 +7,10 @@ use crate::frontend::codes::rocket_uri_macro_view_code;
 use crate::frontend::notes::rocket_uri_macro_edit_note;
 use crate::frontend::notes::rocket_uri_macro_new_note;
 use crate::frontend::notes::rocket_uri_macro_show_note;
+use crate::frontend::view::render_notes_grid;
 use markdown;
 use maud::{html, Markup, PreEscaped};
 use rocket::uri;
-
-pub fn render_notes_grid(notes: &Vec<Note>) -> Markup {
-    html! {
-      section class="note-grid" {
-        @for note in notes {
-          article class="note-article" {
-            div class="note-article-title" {
-              a href={(format!("/notes/{}", note.id))} { // TODO: use uri
-                (note.title)
-              }
-              @if let Some(code) = &note.code_name {
-                p class="badge" { (code) }
-              }
-            }
-            p {
-              (PreEscaped(markdown::to_html(&note.description)))
-            }
-          }
-        }
-      }
-    }
-}
 
 pub fn render_note(
     note: &Note,
@@ -43,51 +22,53 @@ pub fn render_note(
 ) -> Markup {
     let rendered_children = render_notes_grid(child_notes);
     html! {
-          main class="container" {
-            nav class="breadcrumb" style="justify-content: flex-start" {
+          main {
+            nav class="breadcrumb" {
               a href="/" { "Home" }
               @for (id, title) in ancestors {
-                span style="margin-left: 0.4rem; margin-right: 0.4rem" { " / " }
+                span class="crumb" { " / " }
                 a href=(uri!(show_note(*id))) { (title) }
               }
-              span style="margin-left: 0.4rem; margin-right: 0.4rem" { " / " }
+              span class="crumb" { " / " }
               span { (note.title.clone()) }
             }
 
-            h3 style="margin-bottom: 1rem; margin-top: 1rem;" { (note.title) }
-            //p style="color: var(--muted-color); font-size: 0.9em; margin-bottom: 0.5rem" {
-            @if let Some(code_name) = note.code_name.clone() {
-              a href={(uri!(view_code(name=code_name.clone(),
-                                      note=Some(note.id.to_string()))))} {
-                "Code: " (code_name.clone())
+            div class="note-header" {
+              h2  { (note.title) }
+              @if let Some(code_name) = note.code_name.clone() {
+                a href={(uri!(view_code(name=code_name.clone(),
+                                        note=Some(note.id.to_string()))))}
+                  role="button" {
+                  (code_name.clone())
+                }
               }
             }
-            @for a in attributes {
-                p style="color: var(--muted-color); font-size: 0.9em; margin-bottom: 0.5rem" {
-                    (a.0) ":" (a.1)
-                }
+            div class="attribute-container" {
+              @for a in attributes {
+                  p class="badge attribute" {
+                      (a.0) ": " (a.1)
+                  }
+              }
             }
-            article style=r#"
-          padding: 1rem; border: 1px solid var(--muted-border);
-          border-radius: 0.5rem; margin: 0.5rem; padding: 0.5rem
-        "# {
-              p style="margin-bottom: 0.2rem"
-              { (PreEscaped(markdown::to_html(&note.description))) }
-            }
+            article { p { (PreEscaped(markdown::to_html(&note.description))) } }
+
             (render_forms(note.id, forms))
-            a href={(uri!(new_note(parent_id = Some(note.id))))} role="button" {
-              "Create Subnote"
+
+            div class="note-bottom-buttons" {
+              a href={(uri!(new_note(parent_id = Some(note.id))))} role="button" {
+                "Create Subnote"
+              }
+              a href={(uri!(edit_note(note.id)))} role="button" {
+                "Edit Note"
+              }
+              a href=(uri!(crate::frontend::notes::delete_note_confirm(note.id))) role="button" {
+                "Delete Note"
+              }
             }
-            a href={(uri!(edit_note(note.id)))} role="button" {
-              "Edit Note"
-            }
-            h5 {"Subnotes"}
+            h3 {"Subnotes"}
             (rendered_children);
             @for l in logs {
                 p style="color: var(--muted-color); font-size: 0.9em;" { (l) }
-            }
-            a href=(uri!(crate::frontend::notes::delete_note_confirm(note.id))) role="button" {
-                "Delete Note"
             }
           }
     }

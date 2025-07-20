@@ -1,14 +1,18 @@
+use crate::api::codes::FormContainer;
 use maud::{html, Markup};
 use rocket::request::FlashMessage;
 use rocket::response::{Flash, Responder, Result};
 use rocket::uri;
 use rocket::{Request, Response};
+use std::collections::HashMap;
 
 use crate::db_manage::Note;
 use crate::frontend::codes::rocket_uri_macro_list_codes;
 use crate::frontend::notes::rocket_uri_macro_root_notes;
-use crate::frontend::render::render_notes_grid;
+//use crate::frontend::render::render_notes_grid;
 use crate::frontend::style::{base_flash, footer, meta};
+
+use super::render::render_note;
 
 #[derive(Debug, Clone)]
 pub enum MyFlashType {
@@ -43,6 +47,14 @@ impl<'a> From<FlashMessage<'a>> for MyFlash {
 pub enum ViewState {
     Login,
     Root(Vec<Note>),
+    Note(
+        Note,
+        Vec<(String, String)>,
+        HashMap<String, FormContainer>,
+        Vec<Note>,
+        Vec<(i64, String)>,
+        Vec<String>,
+    ),
 }
 
 #[derive(Debug)]
@@ -101,7 +113,7 @@ fn root(notes: Vec<Note>) -> Markup {
     html! {
       main {
         section class="main" {
-          h2 { "Home" }
+            div class="note-header" {h2 { "Home" }}
           (render_notes_grid(&notes))
           a href="/notes/new" role="button" { "Create New Root Note" }
         }
@@ -154,8 +166,23 @@ pub fn render(page: Page) -> Markup {
           main {
             (header())
             (page.flash)
-            (page.main)
-            //(footer())
+            div class="page-main" { (page.main) }
+            (footer())
+          }
+        }
+      }
+    }
+}
+
+pub fn render_notes_grid(notes: &Vec<Note>) -> Markup {
+    html! {
+      section class="note-grid" {
+        @for note in notes {
+          article class="note-article" {
+              a href={(format!("/notes/{}", note.id))} { // TODO: use uri
+                (note.title)
+              }
+              @if let Some(code) = &note.code_name { p class="badge" { (code) } }
           }
         }
       }
@@ -167,6 +194,21 @@ impl<'r> Responder<'r, 'static> for View {
         let main = match self.state {
             ViewState::Login => login(),
             ViewState::Root(notes) => root(notes),
+            ViewState::Note(
+                note,
+                attributes,
+                forms,
+                child_notes,
+                ancestors,
+                logs,
+            ) => render_note(
+                &note,
+                &attributes,
+                &forms,
+                &child_notes,
+                &ancestors,
+                &logs,
+            ),
         };
         let rendered_flash = render_flashes(self.flash);
         let markup = html! {

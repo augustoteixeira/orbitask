@@ -15,8 +15,9 @@ use crate::api::notes::rocket_uri_macro_update_or_add_attribute_submit;
 use crate::api::Authenticated;
 use crate::db_manage::codes::get_all_code_names;
 use crate::db_manage::{get_child_notes, get_note, get_root_notes};
-use crate::frontend::render::{render_note, render_notes_grid};
+use crate::frontend::render::render_note;
 use crate::frontend::style::{base_flash, render, Page};
+use crate::frontend::view::render_notes_grid;
 
 use super::view::{MyFlash, View, ViewState};
 
@@ -26,23 +27,7 @@ pub async fn root_notes(
     _auth: Authenticated,
     mut db: Connection<Db>,
 ) -> View {
-    //{Result<Markup, Flash<Redirect>> {
     let notes = get_root_notes(&mut db).await.unwrap_or_default();
-    let contents = html! {
-      main {
-        section class="main" {
-          h2 { "Home" }
-          (render_notes_grid(&notes))
-          a href="/notes/new" role="button" { "Create New Root Note" }
-        }
-      }
-    };
-    //let page = Page {
-    //    title: html! {title {"Notes"}},
-    //    flash: base_flash(flash),
-    //    contents,
-    //};
-    //Ok(render(page))
     return View {
         state: ViewState::Root(notes),
         flash: flash.into_iter().map(MyFlash::from).collect(),
@@ -55,7 +40,7 @@ pub async fn show_note(
     id: i64,
     flash: Option<FlashMessage<'_>>,
     mut db: Connection<Db>,
-) -> Result<Markup, Flash<Redirect>> {
+) -> Result<View, Flash<Redirect>> {
     let note = match get_note(&mut db, id).await {
         Ok(Some(note)) => note,
         Ok(None) => {
@@ -92,13 +77,24 @@ pub async fn show_note(
         &ancestors,
         &logs,
     );
+    return Ok(View {
+        state: ViewState::Note(
+            note,
+            attributes,
+            forms,
+            child_notes,
+            ancestors,
+            logs,
+        ),
+        flash: flash.into_iter().map(MyFlash::from).collect(),
+    });
 
     let page = Page {
         title: html! { title { (note.title) } },
         flash: base_flash(flash),
         contents,
     };
-    Ok(render(page))
+    //Ok(render(page))
 }
 
 pub fn new_note_form(codes: Vec<String>, parent_id: Option<i64>) -> Markup {

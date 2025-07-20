@@ -89,11 +89,10 @@ pub fn header() -> maud::Markup {
 
 pub fn footer() -> Markup {
     html! {
-      footer."container-fluid" {
+      footer {
       small {
-        a href="https://github.com/augustoteixeira/orbitasks"
-          class="secondary" {
-        "Source code"
+        a href="https://github.com/augustoteixeira/orbitasks" {
+          "Source code"
         }
       }
       }
