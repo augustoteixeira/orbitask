@@ -6,11 +6,16 @@ use rocket::uri;
 use rocket::{Request, Response};
 use std::collections::HashMap;
 
+use crate::api::codes::rocket_uri_macro_edit_code_submit;
+use crate::api::notes::rocket_uri_macro_delete_attribute_submit;
+use crate::api::notes::rocket_uri_macro_edit_note_submit;
+use crate::api::notes::rocket_uri_macro_update_or_add_attribute_submit;
 use crate::db_manage::codes::Code;
 use crate::db_manage::Note;
 use crate::frontend::codes::rocket_uri_macro_edit_code;
 use crate::frontend::codes::rocket_uri_macro_list_codes;
 use crate::frontend::notes::rocket_uri_macro_root_notes;
+use crate::frontend::notes::rocket_uri_macro_show_note;
 use crate::frontend::style::{base_flash, footer, meta};
 
 use super::render::render_note;
@@ -56,7 +61,10 @@ pub enum ViewState {
         Vec<(i64, String)>,
         Vec<String>,
     ),
+    NoteEdit(i64, Note, Vec<String>, Vec<(String, String)>),
     Code(Code, Option<String>),
+    CodeNew(),
+    CodeEdit(Code, Option<String>),
 }
 
 #[derive(Debug)]
@@ -195,19 +203,13 @@ fn render_code(code: Code, next: Option<String>) -> Markup {
     html! {
         main class="container" {
             h1 { "Code Details" }
-
             div class="attribute-container" {
               p class="badge" { (code.name.clone()) }
             }
-
             h2 { "Capabilities" }
-
             code { (code.capabilities.clone()) }
-
             h2 { "Script" }
-
             pre { code { (code.script.clone()) } }
-
             nav style="margin-top: 1rem" {
                 a href=(uri!(edit_code(name = code.name.clone(), next = next)
                 )) role="button" {
@@ -215,6 +217,122 @@ fn render_code(code: Code, next: Option<String>) -> Markup {
                 }
             }
         }
+    }
+}
+
+pub fn render_new_code() -> Markup {
+    html! {
+      main class="container" {
+        h1 { "Create New Code" }
+
+        form method="post" action="/codes/new" {
+          label for="name" { "Name (example: mark_done)" }
+          input type="name" id="name" name="name" required;
+
+          label for="capabilities" {
+              r#"Capabilities (example: ["SysLog", { "GetAttribute": "Own" } ]"#
+          }
+          input type="capabilities" id="capabilities"
+                name="capabilities" required;
+
+          label for="script" { "Script" }
+          textarea id="script" name="script" {};
+
+          button type="submit" class="contrast" { "Create Code" }
+        }
+      }
+    }
+}
+
+pub fn render_edit_code(code: &Code, next_url: Option<String>) -> Markup {
+    html! {
+      main class="container" {
+        h1 { "Edit Code" }
+        form method="post" class="edit-code-form"
+             action=(uri!(edit_code_submit(next=next_url))) {
+          input type="hidden" name="name" value=(code.name);
+          label for="capabilities" {
+              r#"Capabilities (example: ["SysLog", { "GetAttribute": "Own" } ])"#
+          }
+          input type="capabilities" id="capabilities"
+                name="capabilities" required value=(code.capabilities);
+          label for="script" { "Script" }
+          textarea id="script" name="script" rows="50" {
+              (code.script)
+          }
+          button type="submit" class="contrast" { "Update Code" }
+        }
+      }
+    }
+}
+
+pub fn render_edit_note(
+    id: i64,
+    note: &Note,
+    all_codes: &Vec<String>,
+    attributes: &Vec<(String, String)>,
+) -> Markup {
+    html! {
+        main class="container" {
+          a href={(uri!(show_note(id)))} role="button" {
+            "Back to note"
+          }
+          h1 { "Edit Note" }
+          form method="post" action=(uri!(edit_note_submit(id)))
+               class="edit-note-form" {
+            label for="title" { "Title" }
+            input type="text" id="title" name="title" required value=(note.title);
+
+            label for="description" { "Description" }
+            textarea id="description" name="description" {
+                (note.description)
+            }
+
+            fieldset class="code-select" {
+              legend { "Code" }
+
+              label {
+                input type="radio" name="code_name" value=""
+                  checked[note.code_name.is_none()];
+                " No code"
+              }
+
+              @for code in all_codes {
+                label {
+                  input type="radio" name="code_name" value=(code)
+                    checked[note.code_name.as_ref() == Some(code)];
+                  " " (code)
+                }
+              }
+            }
+
+          button type="submit" class="contrast" { "Save Changes" }
+        }
+
+
+        h3 { "Attributes" }
+
+        div class="edit-note-form"{
+          @for (key, value) in attributes {
+            form method="post" action=(uri!(delete_attribute_submit(id, key)))
+                 class="attribute-remover" {
+              label class="badge" { (format!("{}: {}", key, value)) }
+              button type="submit" name="remove_attribute" value=(key) { "Remove" }
+            }
+          }
+        }
+
+        form method="post" action=(uri!(update_or_add_attribute_submit(id)))
+             class="edit-note-form" {
+          label for="new_attr_key" { "New Attribute Key" }
+          input type="text" id="new_attr_key" name="key" required;
+
+          label for="new_attr_value" { "New Attribute Value" }
+          input type="text" id="new_attr_value" name="value" required;
+
+          button type="submit" { "Add Attribute" }
+        }
+      }
     }
 }
 
@@ -238,7 +356,12 @@ impl<'r> Responder<'r, 'static> for View {
                 &ancestors,
                 &logs,
             ),
+            ViewState::NoteEdit(id, note, all_codes, attributes) => {
+                render_edit_note(id, &note, &all_codes, &attributes)
+            }
             ViewState::Code(code, next) => render_code(code, next),
+            ViewState::CodeNew() => render_new_code(),
+            ViewState::CodeEdit(code, next) => render_edit_code(&code, next),
         };
         let rendered_flash = render_flashes(self.flash);
         let markup = html! {

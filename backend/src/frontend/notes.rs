@@ -145,88 +145,13 @@ pub async fn new_note(
     Ok(render(page))
 }
 
-pub fn edit_note_form(
-    id: i64,
-    title_val: &str,
-    desc_val: &str,
-    code_val: &Option<String>,
-    all_codes: &[String],
-    attributes: &Vec<(String, String)>,
-) -> Markup {
-    html! {
-        main class="container" {
-
-          a href={(uri!(show_note(id)))} role="button" {
-            "Back to note"
-          }
-
-          h1 { "Edit Note" }
-
-
-          form method="post" action=(uri!(edit_note_submit(id))) {
-            label for="title" { "Title" }
-            input type="text" id="title" name="title" required value=(title_val);
-
-            label for="description" { "Description" }
-            textarea id="description" name="description" {
-                (desc_val)
-            }
-
-            fieldset {
-              legend { "Code" }
-
-              label {
-                input type="radio" name="code_name" value=""
-                  checked[code_val.is_none()];
-                " No code"
-              }
-
-              @for code in all_codes {
-                label {
-                  input type="radio" name="code_name" value=(code)
-                    checked[code_val.as_ref() == Some(code)];
-                  (code)
-                }
-              }
-            }
-
-          button type="submit" class="contrast" { "Save Changes" }
-        }
-
-
-        h3 { "Attributes" }
-
-        @for (key, value) in attributes {
-          div {
-            form method="post" action=(uri!(delete_attribute_submit(id, key))) {
-              label { (format!("{}: {}", key, value)) }
-              button type="submit" name="remove_attribute" value=(key) { "Remove" }
-            }
-          }
-        }
-
-        div {
-          form method="post" action=(uri!(update_or_add_attribute_submit(id))) {
-            label for="new_attr_key" { "New Attribute Key" }
-            input type="text" id="new_attr_key" name="key" required;
-
-            label for="new_attr_value" { "New Attribute Value" }
-            input type="text" id="new_attr_value" name="value" required;
-
-            button type="submit" { "Add Attribute" }
-          }
-        }
-      }
-    }
-}
-
 #[get("/notes/<id>/edit")]
 pub async fn edit_note(
     _auth: Authenticated,
     mut db: Connection<Db>,
     id: i64,
     flash: Option<FlashMessage<'_>>,
-) -> Result<Markup, Flash<Redirect>> {
+) -> Result<View, Flash<Redirect>> {
     let note = get_note(&mut db, id)
         .await
         .map_err(|e| {
@@ -242,22 +167,10 @@ pub async fn edit_note(
         Flash::error(Redirect::to(uri!(root_notes)), format!("Error: {e}"))
     })?;
 
-    let contents = edit_note_form(
-        id,
-        &note.title,
-        &note.description,
-        &note.code_name,
-        &codes,
-        &attributes,
-    );
-
-    let page = Page {
-        title: html! { title { "Edit Note" } },
-        flash: base_flash(flash),
-        contents,
-    };
-
-    Ok(render(page))
+    Ok(View {
+        state: ViewState::NoteEdit(id, note, codes, attributes),
+        flash: flash.into_iter().map(MyFlash::from).collect(),
+    })
 }
 
 #[get("/notes/<id>/delete/confirm")]
