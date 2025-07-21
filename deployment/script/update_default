@@ -13,6 +13,14 @@ echo "Compiling release"
 
 echo "🚀 Starting deployment to $VPS_HOST"
 
+echo "Pulling static files in server"
+ssh "$VPS_USER@$VPS_HOST" "cd '$REMOTE_DIR'; git pull" || {
+    echo "❌ Failed to pull repo"
+    exit 1
+}
+
+
+
 # Create remote directory
 echo "📁 Ensuring remote directory exists..."
 ssh "$VPS_USER@$VPS_HOST" "mkdir -p '$REMOTE_DIR'" || {
