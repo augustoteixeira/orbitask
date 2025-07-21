@@ -99,7 +99,7 @@ body {
     align-items: center;
 }
 
-.edit-code-form, .edit-note-form, .code-select {
+.edit-code-form, .edit-note-form, .code-select, .new-note-form {
     display: flex;
     gap: 10px;
     flex-direction: column;

@@ -1,11 +1,6 @@
-use crate::api::codes::rocket_uri_macro_edit_code_submit;
 use crate::frontend::notes::rocket_uri_macro_root_notes;
 use crate::frontend::notes::rocket_uri_macro_show_note;
-use crate::{
-    api::Authenticated,
-    db_manage::{codes::Code, Db},
-};
-use maud::{html, Markup};
+use crate::{api::Authenticated, db_manage::Db};
 use rocket::uri;
 use rocket::{
     get,
@@ -14,7 +9,6 @@ use rocket::{
 };
 use rocket_db_pools::Connection;
 
-use super::style::{base_flash, render, Page};
 use crate::frontend::view::{MyFlash, View, ViewState};
 
 #[get("/codes/<name>?<note>")]

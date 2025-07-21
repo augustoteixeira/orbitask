@@ -1,9 +1,9 @@
 use crate::api::codes::FormContainer;
 use maud::{html, Markup};
 use rocket::request::FlashMessage;
-use rocket::response::{Flash, Responder, Result};
+use rocket::response::{Responder, Result};
 use rocket::uri;
-use rocket::{Request, Response};
+use rocket::Request;
 use std::collections::HashMap;
 
 use crate::api::codes::rocket_uri_macro_edit_code_submit;
@@ -16,7 +16,6 @@ use crate::frontend::codes::rocket_uri_macro_edit_code;
 use crate::frontend::codes::rocket_uri_macro_list_codes;
 use crate::frontend::notes::rocket_uri_macro_root_notes;
 use crate::frontend::notes::rocket_uri_macro_show_note;
-use crate::frontend::style::{base_flash, footer, meta};
 
 use super::render::render_note;
 
@@ -61,7 +60,9 @@ pub enum ViewState {
         Vec<(i64, String)>,
         Vec<String>,
     ),
+    NoteNew(Vec<String>, Option<i64>),
     NoteEdit(i64, Note, Vec<String>, Vec<(String, String)>),
+    NoteConfirmDelete(i64, String),
     Code(Code, Option<String>),
     CodeList(Vec<String>, Option<String>),
     CodeNew(),
@@ -72,6 +73,18 @@ pub enum ViewState {
 pub struct View {
     pub state: ViewState,
     pub flash: Vec<MyFlash>,
+}
+
+pub fn footer() -> Markup {
+    html! {
+      footer {
+      small {
+        a href="https://github.com/augustoteixeira/orbitasks" {
+        "Source code"
+        }
+      }
+      }
+    }
 }
 
 fn render_flashes(flashes: Vec<MyFlash>) -> Markup {
@@ -89,7 +102,6 @@ fn render_flashes(flashes: Vec<MyFlash>) -> Markup {
 
 fn login() -> Markup {
     html! {
-      (meta())
       link rel="stylesheet" href="/static/style.css";
 
       main.container {
@@ -117,6 +129,19 @@ fn login() -> Markup {
         }
       }
       (footer())
+    }
+}
+
+fn render_confirm_delete(id: i64, title: &String) -> Markup {
+    html! {
+        main class="container" {
+            h1 { "Confirm Delete Note" }
+            p { "Are you sure you want to delete the note: " (title) "?" }
+            form method="post" action=(uri!(crate::api::notes::delete_note_submit(id))) {
+                button type="submit" { "Yes, delete" }
+            }
+            a href=(uri!(show_note(id))) { "Cancel" }
+        }
     }
 }
 
@@ -362,6 +387,46 @@ pub fn render_list_codes(
     }
 }
 
+pub fn render_new_note(codes: Vec<String>, parent_id: Option<i64>) -> Markup {
+    html! {
+      main class="container" {
+        h1 { "Create New Note" }
+
+        form method="post" action="/notes/new"
+             class="new-note-form" {
+          label for="title" { "Title" }
+          input type="text" id="title" name="title" required;
+
+          label for="description" { "Description (Markdown)" }
+          textarea id="description" name="description" {};
+
+          label for="code_name" { "Behavior (Code)" }
+          fieldset class="code-select" {
+            legend { "Code" }
+            // Option for "no code"
+            label {
+              input type="radio" name="code_name" value="__none__" required checked;
+              " No code"
+            }
+            // Options for each code name
+            @for code in codes.iter() {
+              label {
+                input type="radio" name="code_name" value=(code);
+                (code)
+              }
+            }
+          }
+
+          @if let Some(pid) = parent_id {
+            input type="hidden" name="parent_id" value=(pid);
+          }
+
+          button type="submit" class="contrast" { "Create Notes" }
+        }
+      }
+    }
+}
+
 impl<'r> Responder<'r, 'static> for View {
     fn respond_to(self, req: &'r Request<'_>) -> Result<'static> {
         let main = match self.state {
@@ -382,8 +447,14 @@ impl<'r> Responder<'r, 'static> for View {
                 &ancestors,
                 &logs,
             ),
+            ViewState::NoteNew(codes, parent_id) => {
+                render_new_note(codes, parent_id)
+            }
             ViewState::NoteEdit(id, note, all_codes, attributes) => {
                 render_edit_note(id, &note, &all_codes, &attributes)
+            }
+            ViewState::NoteConfirmDelete(id, title) => {
+                render_confirm_delete(id, &title)
             }
             ViewState::Code(code, next) => render_code(code, next),
             ViewState::CodeList(codes, no_note) => {

@@ -221,16 +221,17 @@ pub async fn delete_note_submit(
     id: i64,
 ) -> Result<Flash<Redirect>, Flash<Redirect>> {
     // Fetch the note to determine the parent redirect before deletion
-    let parent_redirect = match crate::db_manage::notes::get_note(&mut db, id).await {
-        Ok(Some(note)) => {
-            if let Some(pid) = note.parent_id {
-                Redirect::to(uri!(crate::frontend::notes::show_note(pid)))
-            } else {
-                Redirect::to(uri!(crate::frontend::notes::root_notes))
+    let parent_redirect =
+        match crate::db_manage::notes::get_note(&mut db, id).await {
+            Ok(Some(note)) => {
+                if let Some(pid) = note.parent_id {
+                    Redirect::to(uri!(crate::frontend::notes::show_note(pid)))
+                } else {
+                    Redirect::to(uri!(crate::frontend::notes::root_notes))
+                }
             }
-        },
-        _ => Redirect::to(uri!(crate::frontend::notes::root_notes)),
-    };
+            _ => Redirect::to(uri!(crate::frontend::notes::root_notes)),
+        };
 
     match crate::db_manage::notes::delete_note(&mut db, id).await {
         Ok(_) => Ok(Flash::success(

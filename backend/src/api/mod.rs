@@ -1,7 +1,5 @@
-use rocket::fairing::{Fairing, Info, Kind};
 use rocket::http::Status;
 use rocket::request::{FromRequest, Outcome};
-use rocket::response::{self, Redirect, Responder, Response};
 use rocket::Request;
 
 pub mod login;

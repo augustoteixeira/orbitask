@@ -34,7 +34,7 @@ pub async fn create_code(
     name: String,
     capabilities: String,
     script: String,
-) -> Result<i64, DbError> {
+) -> Result<String, DbError> {
     sqlx::query(
         r#"
     INSERT INTO codes (name, capabilities, script)
@@ -49,7 +49,7 @@ pub async fn create_code(
     .context(SqlxSnafu {
         task: "creating code",
     })?;
-    let new_code_id: (i64,) = sqlx::query_as("SELECT last_insert_rowid()")
+    let new_code_id: (String,) = sqlx::query_as("SELECT last_insert_rowid()")
         .fetch_one(&mut ***db)
         .await
         .context(SqlxSnafu {
@@ -183,10 +183,10 @@ fn within_range(
     _db: &mut Connection<Db>,
     range: &Range,
     id: i64,
-    target_id: Option<i64>,
+    _target_id: Option<i64>,
 ) -> bool {
     match range {
-        Range::Own => matches!(Some(id), target_id),
+        Range::Own => matches!(Some(id), _target_id),
     }
 }
 

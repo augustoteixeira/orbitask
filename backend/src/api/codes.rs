@@ -1,15 +1,14 @@
 use crate::db_manage::codes::{create_code, edit_code};
+use crate::frontend::codes::rocket_uri_macro_view_code;
 use chrono::NaiveDate;
 use rocket::form::Form;
-//use rocket::post;
 use rocket::response::{Flash, Redirect};
 use rocket_db_pools::Connection;
 
 use crate::api::Authenticated;
+use crate::Db;
 use rocket::uri;
 use rocket::{post, FromForm};
-//use crate::db_manage::{self};
-use crate::Db;
 use serde::{Deserialize, Serialize, Serializer};
 
 #[derive(FromForm)]
@@ -31,8 +30,12 @@ pub async fn create_code_submit(
         script,
     } = form.into_inner();
 
+    let note: Option<String> = None;
     match create_code(&mut db, name, capabilities, script).await {
-        Ok(id) => Ok(Flash::success(Redirect::to("/"), "Code created.")),
+        Ok(name) => Ok(Flash::success(
+            Redirect::to(uri!(view_code(name = name, note = note))), // TODO insert a redirect?
+            "Code created.",
+        )),
         Err(e) => Err(Flash::error(
             Redirect::to("/codes/new"), // TODO use uri! macro
             format!("Failed to create code: {e}"),

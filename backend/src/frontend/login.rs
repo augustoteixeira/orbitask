@@ -1,5 +1,3 @@
-use maud::html;
-
 use super::view::{MyFlash, View, ViewState};
 use rocket::get;
 use rocket::request::FlashMessage;

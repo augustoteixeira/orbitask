@@ -13,7 +13,6 @@ use utils::RateLimiter;
 use bcrypt::{hash, DEFAULT_COST};
 use rocket::figment::Figment;
 use rocket::fs::FileServer;
-use rocket::response::{Flash, Redirect};
 use rocket::Config;
 use rocket_db_pools::{sqlx, Database};
 use rpassword::prompt_password;
