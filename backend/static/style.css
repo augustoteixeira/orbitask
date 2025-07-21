@@ -42,9 +42,10 @@ h3 { font-size: 28px; }
 h4 { font-size: 28px; }
 h5 { font-size: 28px; }
 h6 { font-size: 24px; }
-p, a, button, span, code, label, input, textarea, [role=button], legend {
+p, a, button, span, label, input, textarea, [role=button], legend {
     font-size: calc(1.5rem + 0.2vw);
 }
+code { font-size: calc(2rem + 0.2vw); }
 
 pre {
     margin-bottom: 3rem;
@@ -90,6 +91,16 @@ body {
     align-items: center;
     border-bottom: 1px solid gray;
     margin-bottom: 2rem;
+}
+
+.field {
+    display: flex;
+    gap: 10px;
+    justify-content: left;
+    align-items: center;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid gray;
+    margin-bottom: 1rem;
 }
 
 .attribute-container, .note-bottom-buttons, .attribute-remover {

@@ -251,8 +251,9 @@ pub fn render_new_code() -> Markup {
       main class="container" {
         h1 { "Create New Code" }
 
-        form method="post" action="/codes/new" {
-          label for="name" { "Name (example: mark_done)" }
+        form method="post" action="/codes/new"
+             class="edit-code-form" {
+          label for="name" { "Label (example: mark_done)" }
           input type="name" id="name" name="name" required;
 
           label for="capabilities" {
@@ -262,7 +263,7 @@ pub fn render_new_code() -> Markup {
                 name="capabilities" required;
 
           label for="script" { "Script" }
-          textarea id="script" name="script" {};
+          textarea id="script" name="script" rows="30" {};
 
           button type="submit" class="contrast" { "Create Code" }
         }
