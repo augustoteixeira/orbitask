@@ -7,6 +7,9 @@ REMOTE_DIR=/opt/orbitask
 REMOTE_BIN="$REMOTE_DIR/backend"
 LOCAL_BIN=backend/target/release/backend
 
+echo "Compiling release"
+
+(cd ../../backend; cargo build --release)
 
 echo "🚀 Starting deployment to $VPS_HOST"
 
