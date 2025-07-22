@@ -2,7 +2,7 @@ use rocket_db_pools::sqlx::FromRow;
 use rocket_db_pools::sqlx::{self};
 use rocket_db_pools::Connection;
 use snafu::ResultExt;
-use sqlx::Acquire;
+use sqlx::{Acquire, SqliteConnection};
 
 use super::errors::{DbError, NoNoteSnafu, SqlxSnafu};
 use super::logs::create_log;
@@ -18,15 +18,12 @@ pub struct Note {
 }
 
 pub async fn create_note(
-    db: &mut Connection<Db>,
+    db: &mut SqliteConnection,
     parent_id: Option<i64>,
     title: String,
     description: String,
     code_name: Option<String>,
 ) -> Result<i64, DbError> {
-    let mut tx = db.begin().await.context(SqlxSnafu {
-        task: "beginning transaction",
-    })?;
     sqlx::query(
         r#"
       INSERT INTO notes (parent_id, title, description, code_name)
@@ -37,30 +34,27 @@ pub async fn create_note(
     .bind(&title)
     .bind(&description)
     .bind(&code_name)
-    .execute(&mut *tx)
+    .execute(&mut *db)
     .await
     .context(SqlxSnafu {
         task: "creating note",
     })?;
     // Now get the last inserted row ID
     let row: (i64,) = sqlx::query_as("SELECT last_insert_rowid()")
-        .fetch_one(&mut *tx)
+        .fetch_one(&mut *db)
         .await
         .context(SqlxSnafu {
             task: "getting created note",
         })?;
     let inserted_id = row.0;
     let _ = create_log(
-        &mut *tx,
+        &mut *db,
         inserted_id,
         "info".to_string(),
         format!("Note {inserted_id} created with title {title}"),
         None,
     )
     .await?;
-    tx.commit().await.context(SqlxSnafu {
-        task: "commiting create note tx",
-    })?;
     Ok(inserted_id)
 }
 
@@ -84,14 +78,14 @@ pub async fn get_note(
 }
 
 pub async fn get_child_notes(
-    db: &mut Connection<Db>,
+    db: &mut SqliteConnection,
     note_id: i64,
 ) -> Result<Vec<Note>, sqlx::Error> {
     let notes = sqlx::query_as::<_, Note>(
         "SELECT id, parent_id, title, description, code_name FROM notes WHERE parent_id = ? ORDER BY id"
     )
     .bind(note_id)
-    .fetch_all(&mut ***db)
+    .fetch_all(&mut *db)
     .await?;
 
     Ok(notes)

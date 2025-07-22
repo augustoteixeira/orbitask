@@ -2,6 +2,7 @@ use chrono::NaiveDate;
 use rocket_db_pools::sqlx::FromRow;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use snafu::ResultExt;
+use sqlx::SqliteConnection;
 use std::collections::HashMap;
 use std::fmt::Debug;
 
@@ -59,7 +60,7 @@ pub async fn create_code(
 }
 
 pub async fn get_code(
-    db: &mut Connection<Db>,
+    db: &mut SqliteConnection,
     note_id: i64,
 ) -> Result<Option<Code>, DbError> {
     let code = sqlx::query_as::<_, Code>(
@@ -71,7 +72,7 @@ pub async fn get_code(
         "#,
     )
     .bind(note_id)
-    .fetch_optional(&mut ***db)
+    .fetch_optional(&mut *db)
     .await
     .context(SqlxSnafu {
         task: "querying code",
@@ -180,7 +181,7 @@ pub enum Capabilities {
 }
 
 fn within_range(
-    _db: &mut Connection<Db>,
+    _db: &mut SqliteConnection,
     range: &Range,
     id: i64,
     _target_id: Option<i64>,
@@ -191,7 +192,7 @@ fn within_range(
 }
 
 fn authorized<R: Debug>(
-    db: &mut Connection<Db>,
+    db: &mut SqliteConnection,
     id: i64,
     command: &Command<R>,
     capability: &Capabilities,
@@ -225,7 +226,7 @@ fn authorized<R: Debug>(
 }
 
 pub async fn run<R: Debug>(
-    db: &mut Connection<Db>,
+    db: &mut SqliteConnection,
     code: Code,
     command_name: &str,
     id: i64,
@@ -372,7 +373,7 @@ pub async fn get_forms(
 }
 
 pub async fn execute(
-    db: &mut Connection<Db>,
+    db: &mut SqliteConnection,
     id: i64,
     form_container: &FormContainer,
     value: &Value,
@@ -398,7 +399,7 @@ pub async fn execute(
 }
 
 pub async fn execute_done(
-    db: &mut Connection<Db>,
+    db: &mut SqliteConnection,
     id: i64,
     action: &Action,
     value: &Value,

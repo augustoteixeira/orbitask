@@ -31,7 +31,6 @@ Improvements
 - implement a new column (data_types) for logs and in each log create a link to view the log with a visualizer for common types like json, text, images... then add a lot of data to each auto log.
 - make an import system for one script to `requre` another in the sql database.
 - make a lua library that exports functions to make it easier to call effects. For example: `log("hi")` would yield the necessary `SysLog` object.
-- make execution of a note atomic from the sql perspective. We start a transaction at the start of the execution and end it later. In case there is a bug at the lua code, the execution will have no side effects.
 - create a way to fix the order of the form actions. Currently it is random.
 - make flash messages be a vector or json values
 - infer missing capabilities automatically and suggest their inclusion with an orange flash card once a code is saved.

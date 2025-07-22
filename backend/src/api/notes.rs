@@ -3,6 +3,7 @@ use rocket::post;
 use rocket::response::{Flash, Redirect};
 use rocket::{uri, FromForm};
 use rocket_db_pools::Connection;
+use sqlx::Acquire;
 use std::collections::HashMap;
 
 use crate::api::Authenticated;
@@ -49,15 +50,26 @@ pub async fn create_note_submit(
             "Note title cannot be empty.",
         ));
     }
-
-    match create_note(&mut db, parent_id, title, description, code_name).await {
-        Ok(note_id) => Ok(Flash::success(
-            Redirect::to(format!("/notes/{note_id}")),
+    let mut tx = db.begin().await.map_err(|e| {
+        Flash::error(Redirect::to("/"), format!("Cannot begin tx: {e}."))
+    })?;
+    let note_id =
+        create_note(&mut *tx, parent_id, title, description, code_name)
+            .await
+            .map_err(|e| {
+                Flash::error(
+                    Redirect::to("/"),
+                    format!("Failed to create note: {e}."),
+                )
+            })?;
+    match tx.commit().await {
+        Ok(_) => Ok(Flash::success(
+            Redirect::to(uri!(show_note(note_id))),
             "Note created successfully.",
         )),
         Err(e) => Err(Flash::error(
             Redirect::to("/"),
-            format!("Failed to create note: {e}."),
+            format!("Cannot commit tx: {e}."),
         )),
     }
 }
@@ -101,16 +113,25 @@ pub async fn execute_action(
                     )
                 )
             })?;
-    let message = execute(&mut db, id, &form_container, &value).await.map_err(|e| {
+    let mut tx = db.begin().await.map_err(|e| {
+        Flash::error(Redirect::to("/"), format!("Cannot begin tx: {e}."))
+    })?;
+    let message = execute(&mut *tx, id, &form_container, &value).await.map_err(|e| {
         Flash::error(
             Redirect::to("/"),
             format!("executing failed: id {id:?}, form {form_container:?}, value {:?}\n{e}", &value),
         )
     })?;
-    Ok(Flash::success(
-        Redirect::to(uri!(show_note(id))),
-        format!("Code correctly executed: {message}"),
-    ))
+    match tx.commit().await {
+        Ok(_) => Ok(Flash::success(
+            Redirect::to(uri!(show_note(id))),
+            format!("Code correctly executed: {message}."),
+        )),
+        Err(e) => Err(Flash::error(
+            Redirect::to("/"),
+            format!("Cannot commit tx: {e}."),
+        )),
+    }
 }
 
 #[derive(FromForm)]

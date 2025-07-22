@@ -1,5 +1,5 @@
 use crate::db_manage::errors::{DbError, NoLogSnafu, SqlxSnafu};
-use rocket_db_pools::sqlx::{FromRow, Row};
+use rocket_db_pools::sqlx::FromRow;
 use rocket_db_pools::Connection;
 use snafu::ResultExt;
 use sqlx::SqliteConnection;

@@ -1,5 +1,6 @@
 use rocket_db_pools::Connection;
 use snafu::ResultExt;
+use sqlx::SqliteConnection;
 
 use crate::db_manage::Db;
 
@@ -13,7 +14,7 @@ use super::errors::{DbError, SqlxSnafu};
 // }
 
 pub async fn set_attribute(
-    db: &mut Connection<Db>,
+    db: &mut SqliteConnection,
     note_id: i64,
     key: &str,
     value: &str,
@@ -28,7 +29,7 @@ pub async fn set_attribute(
     .bind(note_id)
     .bind(key)
     .bind(value)
-    .execute(&mut ***db)
+    .execute(&mut *db)
     .await
     .context(SqlxSnafu {
         task: "setting attributes",
@@ -38,7 +39,7 @@ pub async fn set_attribute(
 }
 
 pub async fn get_attribute(
-    db: &mut Connection<Db>,
+    db: &mut SqliteConnection,
     note_id: i64,
     key: &str,
 ) -> Result<Option<String>, DbError> {
@@ -47,7 +48,7 @@ pub async fn get_attribute(
     )
     .bind(note_id)
     .bind(key)
-    .fetch_optional(&mut ***db)
+    .fetch_optional(&mut *db)
     .await
     .context(SqlxSnafu {
         task: "getting attributes",
