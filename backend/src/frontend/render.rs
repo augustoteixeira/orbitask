@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use crate::api::codes::{Action, FormContainer, FormType};
 use crate::api::notes::rocket_uri_macro_execute_action;
+use crate::db_manage::logs::Log;
 use crate::db_manage::Note;
 use crate::frontend::codes::rocket_uri_macro_view_code;
 use crate::frontend::notes::rocket_uri_macro_edit_note;
@@ -18,7 +19,7 @@ pub fn render_note(
     forms: &HashMap<String, FormContainer>,
     child_notes: &Vec<Note>,
     ancestors: &Vec<(i64, String)>,
-    logs: &Vec<String>,
+    logs: &Vec<Log>,
 ) -> Markup {
     let rendered_children = render_notes_grid(child_notes);
     html! {
@@ -68,7 +69,7 @@ pub fn render_note(
             h3 {"Subnotes"}
             (rendered_children);
             @for l in logs {
-                p style="color: var(--muted-color); font-size: 0.9em;" { (l) }
+                p style="color: var(--muted-color); font-size: 0.9em;" { (format!("{:?}", l)) }
             }
           }
     }

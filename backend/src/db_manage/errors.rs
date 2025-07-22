@@ -7,6 +7,8 @@ pub enum DbError {
     SqlxError { task: String, source: sqlx::Error },
     #[snafu(display("Note not found {id}"))]
     NoNoteError { id: i64, source: sqlx::Error },
+    #[snafu(display("Lob not found {id}"))]
+    NoLogError { id: i64, source: sqlx::Error },
     #[snafu(display("Execution error: {trace}"))]
     ExecutionError { trace: String },
     #[snafu(display("Lua error when {task}: {source}"))]

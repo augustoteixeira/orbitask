@@ -11,6 +11,7 @@ use crate::api::notes::rocket_uri_macro_delete_attribute_submit;
 use crate::api::notes::rocket_uri_macro_edit_note_submit;
 use crate::api::notes::rocket_uri_macro_update_or_add_attribute_submit;
 use crate::db_manage::codes::Code;
+use crate::db_manage::logs::Log;
 use crate::db_manage::Note;
 use crate::frontend::codes::rocket_uri_macro_edit_code;
 use crate::frontend::codes::rocket_uri_macro_list_codes;
@@ -58,7 +59,7 @@ pub enum ViewState {
         HashMap<String, FormContainer>,
         Vec<Note>,
         Vec<(i64, String)>,
-        Vec<String>,
+        Vec<Log>,
     ),
     NoteNew(Vec<String>, Option<i64>),
     NoteEdit(i64, Note, Vec<String>, Vec<(String, String)>),

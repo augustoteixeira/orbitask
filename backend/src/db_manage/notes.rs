@@ -2,8 +2,10 @@ use rocket_db_pools::sqlx::FromRow;
 use rocket_db_pools::sqlx::{self};
 use rocket_db_pools::Connection;
 use snafu::ResultExt;
+use sqlx::Acquire;
 
 use super::errors::{DbError, NoNoteSnafu, SqlxSnafu};
+use super::logs::create_log;
 use super::Db;
 
 #[derive(Debug, FromRow)]
@@ -22,6 +24,9 @@ pub async fn create_note(
     description: String,
     code_name: Option<String>,
 ) -> Result<i64, DbError> {
+    let mut tx = db.begin().await.context(SqlxSnafu {
+        task: "beginning transaction",
+    })?;
     sqlx::query(
         r#"
       INSERT INTO notes (parent_id, title, description, code_name)
@@ -32,23 +37,30 @@ pub async fn create_note(
     .bind(&title)
     .bind(&description)
     .bind(&code_name)
-    .execute(&mut ***db)
+    .execute(&mut *tx)
     .await
     .context(SqlxSnafu {
         task: "creating note",
     })?;
-
     // Now get the last inserted row ID
     let row: (i64,) = sqlx::query_as("SELECT last_insert_rowid()")
-        .fetch_one(&mut ***db)
+        .fetch_one(&mut *tx)
         .await
         .context(SqlxSnafu {
             task: "getting created note",
         })?;
-
     let inserted_id = row.0;
-
-    //let new_note_id: i64 = row.get("id");
+    let _ = create_log(
+        &mut *tx,
+        inserted_id,
+        "info".to_string(),
+        format!("Note {inserted_id} created with title {title}"),
+        None,
+    )
+    .await?;
+    tx.commit().await.context(SqlxSnafu {
+        task: "commiting create note tx",
+    })?;
     Ok(inserted_id)
 }
 
@@ -120,6 +132,9 @@ pub async fn update_note(
     description: String,
     code_name: Option<String>,
 ) -> Result<(), DbError> {
+    let mut tx = db.begin().await.context(SqlxSnafu {
+        task: "beginning transaction",
+    })?;
     sqlx::query(
         r#"
         UPDATE notes
@@ -131,12 +146,22 @@ pub async fn update_note(
     .bind(description)
     .bind(code_name)
     .bind(note_id)
-    .execute(&mut ***db)
+    .execute(&mut *tx)
     .await
     .context(SqlxSnafu {
         task: "updating note",
     })?;
-
+    let _ = create_log(
+        &mut *tx,
+        note_id,
+        "info".to_string(),
+        format!("Note {note_id} updated"),
+        None,
+    )
+    .await?;
+    tx.commit().await.context(SqlxSnafu {
+        task: "commiting create note tx",
+    })?;
     Ok(())
 }
 
@@ -182,7 +207,7 @@ pub async fn delete_note(
         r#"
         DELETE FROM notes
         WHERE id = ?
-        "#
+        "#,
     )
     .bind(note_id)
     .execute(&mut ***db)
@@ -190,6 +215,5 @@ pub async fn delete_note(
     .context(SqlxSnafu {
         task: "deleting note",
     })?;
-
     Ok(())
 }

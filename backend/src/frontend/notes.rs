@@ -1,5 +1,6 @@
 use crate::db_manage::attributes::get_attributes;
 use crate::db_manage::codes::get_forms;
+use crate::db_manage::logs::{get_logs_from_note, Log};
 use crate::db_manage::notes::get_ancestors;
 use crate::db_manage::Db;
 use rocket::get;
@@ -52,7 +53,10 @@ pub async fn show_note(
     let attributes: Vec<(String, String)> =
         get_attributes(&mut db, id).await.unwrap();
 
-    let logs: Vec<String> = Vec::new();
+    let logs: Vec<Log> =
+        get_logs_from_note(&mut db, id).await.map_err(|e| {
+            Flash::error(Redirect::to("/"), format!("Failed to load logs: {e}"))
+        })?;
 
     let forms = get_forms(&mut db, note.id).await.map_err(|e| {
         Flash::error(Redirect::to("/"), format!("Failed to load forms: {e}"))
