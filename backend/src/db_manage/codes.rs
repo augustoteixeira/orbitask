@@ -20,6 +20,7 @@ use crate::db_manage::Db;
 use super::{
     errors::{DbError, LuaSnafu, SqlxSnafu},
     get_child_notes,
+    logs::create_log,
 };
 
 #[allow(dead_code)]
@@ -393,6 +394,13 @@ pub async fn execute(
                 .unwrap(),
             )
             .await?;
+            let _ = create_log(
+                &mut *db,
+                id,
+                "info".to_string(),
+                format!("Note {id} executed form {form_container:?} with value {value:?}"),
+                None,
+            ).await?;
             Ok(message)
         }
     }
