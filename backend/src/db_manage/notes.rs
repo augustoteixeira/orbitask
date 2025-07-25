@@ -1,6 +1,7 @@
 use rocket_db_pools::sqlx::FromRow;
 use rocket_db_pools::sqlx::{self};
 use rocket_db_pools::Connection;
+use serde::{Deserialize, Serialize};
 use snafu::ResultExt;
 use sqlx::{Acquire, SqliteConnection};
 
@@ -8,7 +9,7 @@ use super::errors::{DbError, NoNoteSnafu, SqlxSnafu};
 use super::logs::create_log;
 use super::Db;
 
-#[derive(Debug, FromRow)]
+#[derive(Debug, FromRow, Serialize, Deserialize)]
 pub struct Note {
     pub id: i64,
     pub parent_id: Option<i64>,

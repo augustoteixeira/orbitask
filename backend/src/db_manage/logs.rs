@@ -1,12 +1,13 @@
 use crate::db_manage::errors::{DbError, NoLogSnafu, SqlxSnafu};
 use rocket_db_pools::sqlx::FromRow;
 use rocket_db_pools::Connection;
+use serde::{Deserialize, Serialize};
 use snafu::ResultExt;
 use sqlx::SqliteConnection;
 
 use crate::Db;
 
-#[derive(Debug, FromRow)]
+#[derive(Debug, FromRow, Serialize, Deserialize)]
 pub struct Log {
     pub id: i64,
     pub note_id: i64,

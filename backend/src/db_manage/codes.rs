@@ -24,7 +24,7 @@ use super::{
 };
 
 #[allow(dead_code)]
-#[derive(Debug, FromRow)]
+#[derive(Debug, FromRow, Serialize, Deserialize)]
 pub struct Code {
     pub name: String,
     pub capabilities: String,

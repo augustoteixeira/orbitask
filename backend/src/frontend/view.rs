@@ -4,6 +4,7 @@ use rocket::request::FlashMessage;
 use rocket::response::{Responder, Result};
 use rocket::uri;
 use rocket::Request;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use crate::api::codes::rocket_uri_macro_edit_code_submit;
@@ -20,13 +21,23 @@ use crate::frontend::notes::rocket_uri_macro_show_note;
 
 use super::render::render_note;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum MyFlashType {
     Success,
     Warning,
     Error,
     Info,
 }
+
+// pub struct MyMarkup(Markup);
+// impl Serialize for MyMarkup {
+//     fn serialize<S>(&self, serializer: S -> Result<S::Ok, S::Error>)
+//         where
+//         S: Serializer,
+//     {
+//         &self
+//     }
+// }
 
 #[derive(Debug, Clone)]
 pub struct MyFlash {
@@ -49,7 +60,7 @@ impl<'a> From<FlashMessage<'a>> for MyFlash {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum ViewState {
     Login,
     Root(Vec<Note>),
@@ -431,6 +442,11 @@ pub fn render_new_note(codes: Vec<String>, parent_id: Option<i64>) -> Markup {
 
 impl<'r> Responder<'r, 'static> for View {
     fn respond_to(self, req: &'r Request<'_>) -> Result<'static> {
+        if req.headers().contains("Content-Type")
+            && req.headers().get_one("Content-Type") == Some("application/json")
+        {
+            return serde_json::to_string(&self.state).unwrap().respond_to(req);
+        }
         let main = match self.state {
             ViewState::Login => login(),
             ViewState::Root(notes) => root(notes),
