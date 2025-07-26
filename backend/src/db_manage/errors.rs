@@ -13,6 +13,8 @@ pub enum DbError {
     ExecutionError { trace: String },
     #[snafu(display("Lua error when {task}: {source}"))]
     LuaError { task: String, source: mlua::Error },
+    #[snafu(display("Required file not found {name}"))]
+    LibNotFound { name: String },
     #[snafu(display("Parsing error when {when}"))]
     ParseError { when: String },
 }

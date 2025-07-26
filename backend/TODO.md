@@ -21,8 +21,6 @@ Features
   - hide or change the apperence of done notes
   - if an attribute is long, truncate with dots: `data: JSON { date...` and show complete contents when hovering or clicking
 - Coding
-  - import other codes
-  - make an import system for one script to `require` another in the sql database.
   - make a lua library that exports functions to make it easier to call effects. For example: `log("hi")` would yield the necessary `SysLog` object.
   - add `external` boolean column to the code table
   - create table for remotes

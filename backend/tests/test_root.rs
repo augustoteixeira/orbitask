@@ -23,7 +23,7 @@ async fn test_root() {
     let root = match view {
         ViewState::Root(r) => r,
         _ => {
-            panic!("View is not of type root");
+            panic!("View was not of type root");
         }
     };
     assert!(

@@ -33,8 +33,8 @@ pub async fn create_code_submit(
     let note: Option<String> = None;
     match create_code(&mut db, name, capabilities, script).await {
         Ok(name) => Ok(Flash::success(
-            Redirect::to(uri!(view_code(name = name, note = note))), // TODO insert a redirect?
-            "Code created.",
+            Redirect::to(uri!(view_code(name = name.clone(), note = note))), // TODO insert a redirect?
+            format!("Code {name} created."),
         )),
         Err(e) => Err(Flash::error(
             Redirect::to("/codes/new"), // TODO use uri! macro
@@ -64,7 +64,10 @@ pub async fn edit_code_submit(
     } = form.into_inner();
     match edit_code(&mut db, &name, &capabilities, &script).await {
         Ok(_) => match next {
-            None => Ok(Flash::success(Redirect::to("/"), "Code updated.")),
+            None => Ok(Flash::success(
+                Redirect::to("/"),
+                format!("Code {name} updated."),
+            )),
             Some(s) => Ok(Flash::success(Redirect::to(s), "Code updated.")),
         },
         Err(e) => Err(Flash::error(

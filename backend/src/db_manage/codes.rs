@@ -41,9 +41,10 @@ pub async fn create_code(
         r#"
     INSERT INTO codes (name, capabilities, script)
     VALUES (?, ?, ?)
+    RETURNING name
         "#,
     )
-    .bind(name)
+    .bind(&name)
     .bind(capabilities)
     .bind(script)
     .execute(&mut ***db)
@@ -51,12 +52,14 @@ pub async fn create_code(
     .context(SqlxSnafu {
         task: "creating code",
     })?;
-    let new_code_id: (String,) = sqlx::query_as("SELECT last_insert_rowid()")
-        .fetch_one(&mut ***db)
-        .await
-        .context(SqlxSnafu {
-            task: "getting created code",
-        })?;
+    let new_code_id: (String,) =
+        sqlx::query_as("SELECT name FROM codes WHERE name = ?")
+            .bind(&name)
+            .fetch_one(&mut ***db)
+            .await
+            .context(SqlxSnafu {
+                task: "getting created code",
+            })?;
     Ok(new_code_id.0)
 }
 
@@ -112,7 +115,6 @@ pub async fn get_all_code_names(
         sqlx::query_scalar::<_, String>("SELECT name FROM codes ORDER BY name")
             .fetch_all(&mut ***db)
             .await?;
-
     Ok(names)
 }
 
@@ -146,6 +148,7 @@ pub fn parse_fields(
 #[derive(Debug, Serialize, Deserialize)]
 enum Command<T: Debug> {
     GetId,
+    Import(String),
     Result(T),
     SysLog(String),
     SetAttribute {
@@ -200,6 +203,7 @@ fn authorized<R: Debug>(
 ) -> bool {
     match command {
         Command::GetId => true,
+        Command::Import(_) => true,
         Command::Result(_) => true,
         Command::SysLog(_) => matches!(capability, Capabilities::SysLog),
         Command::GetAttribute { id: target_id, .. } => {
@@ -237,6 +241,7 @@ where
     R: DeserializeOwned,
 {
     let lua = Lua::new();
+
     let capabilities: Vec<Capabilities> =
         serde_json::from_str(code.capabilities.as_str()).map_err(|e| {
             DbError::ParseError {
@@ -280,6 +285,17 @@ where
         }
         let response: JsonValue = match command {
             Command::GetId => id.into(),
+            Command::Import(name) => {
+                let code: Code = get_code_by_name(db, &name)
+                    .await?
+                    .ok_or(DbError::LibNotFound { name: name.clone() })?;
+                let script = code.script;
+                println!("{:}", script);
+                lua.load(&script).exec().context(LuaSnafu {
+                    task: format!("loading requirement {name}"),
+                })?;
+                ().into()
+            }
             Command::Result(a) => return Ok(a),
             Command::SysLog(s) => {
                 println!("{s}");
@@ -443,7 +459,7 @@ pub async fn execute_done(
 }
 
 pub async fn get_code_by_name(
-    db: &mut Connection<Db>,
+    db: &mut SqliteConnection,
     name: &str,
 ) -> Result<Option<Code>, DbError> {
     let code = sqlx::query_as::<_, Code>(
@@ -454,7 +470,7 @@ pub async fn get_code_by_name(
         "#,
     )
     .bind(name)
-    .fetch_optional(&mut ***db)
+    .fetch_optional(&mut *db)
     .await
     .context(SqlxSnafu {
         task: "loading code by name",
